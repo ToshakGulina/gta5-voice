@@ -26,37 +26,6 @@ internal static class Program
         }
     }
 
-    private static void EnsureEncryptTables(string cacheDir)
-    {
-        if (GTA5Keys.PC_NG_ENCRYPT_TABLES != null && GTA5Keys.PC_NG_ENCRYPT_LUTs != null)
-            return;
-
-        Directory.CreateDirectory(cacheDir);
-        string tablesFile = Path.Combine(cacheDir, "gtav_ng_encrypt_tables.dat");
-        string lutsFile   = Path.Combine(cacheDir, "gtav_ng_encrypt_luts.dat");
-
-        if (File.Exists(tablesFile) && File.Exists(lutsFile))
-        {
-            GTA5Keys.PC_NG_ENCRYPT_TABLES = CryptoIO.ReadNgTables(tablesFile);
-            GTA5Keys.PC_NG_ENCRYPT_LUTs   = CryptoIO.ReadNgLuts(lutsFile);
-            return;
-        }
-
-        Console.WriteLine("Generating NG Encryption LUTs (one-time setup, ~5 seconds)...");
-        GTA5Keys.PC_NG_ENCRYPT_TABLES = new uint[17][][];
-        GTA5Keys.PC_NG_ENCRYPT_LUTs   = new GTA5NGLUT[17][];
-
-        for (int k = 0; k < 17; k++)
-        {
-            GTA5Keys.PC_NG_ENCRYPT_TABLES[k] = RandomGauss.Solve(GTA5Keys.PC_NG_DECRYPT_TABLES[k]);
-            GTA5Keys.PC_NG_ENCRYPT_LUTs[k]   = LookUpTableGenerator.BuildLUTs2(GTA5Keys.PC_NG_DECRYPT_TABLES[k]);
-        }
-
-        CryptoIO.WriteNgTables(tablesFile, GTA5Keys.PC_NG_ENCRYPT_TABLES);
-        CryptoIO.WriteLuts(lutsFile, GTA5Keys.PC_NG_ENCRYPT_LUTs);
-        Console.WriteLine("NG Encryption LUTs cached to: " + cacheDir);
-    }
-
     private static byte[] DecryptAwcInPlace(byte[] raw)
     {
         if (raw == null || raw.Length < 16) return raw;
@@ -141,7 +110,6 @@ internal static class Program
         {
             foreach (var dc in dataChunks)
             {
-                // Skip if already unencrypted MP3 (0xFF 0xFB)
                 if (dc.size >= 2 && data[dc.offset] == 0xFF && (data[dc.offset + 1] & 0xE0) == 0xE0)
                     continue;
                 if (dc.size % 4 == 0)
@@ -225,13 +193,11 @@ internal static class Program
         }
         else if (cmd == "inject" && args.Length >= 4)
         {
-            string cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ng_cache");
-            EnsureEncryptTables(cacheDir);
-
             string targetDir = args.Length >= 5 ? args[3].ToLowerInvariant().Replace('/', '\\').Trim('\\') : "";
             if (targetDir == "." || targetDir == "root") targetDir = "";
             string inFile = args.Length >= 5 ? args[4] : args[3];
             string fileName = Path.GetFileName(inFile);
+            string fileNameLower = fileName.ToLowerInvariant();
             byte[] data = File.ReadAllBytes(inFile);
 
             RpfDirectoryEntry dirEntry = rpf.Root;
@@ -247,9 +213,30 @@ internal static class Program
                 }
             }
 
-            rpf.Encryption = RpfEncryption.NG;
+            // Fast in-place binary overwrite when replacing an existing uncompressed entry of identical byte size!
+            // This preserves the original Rockstar NG-encrypted RPF header untouched (< 1 ms, no OpenIV.asi required!).
+            foreach (var ex in dirEntry.Files)
+            {
+                if (ex is RpfBinaryFileEntry bfe && bfe.NameLower == fileNameLower && bfe.FileSize == 0 && !bfe.IsEncrypted)
+                {
+                    long origLen = bfe.GetFileSize();
+                    if (origLen == data.Length)
+                    {
+                        long writePos = rpf.StartPos + ((long)bfe.FileOffset * 512);
+                        using (var fs = File.Open(rpfPath, FileMode.Open, FileAccess.ReadWrite))
+                        {
+                            fs.Position = writePos;
+                            fs.Write(data, 0, data.Length);
+                        }
+                        Console.WriteLine($"INJECTED IN-PLACE (native NG header preserved, 0 header changes): {bfe.Path} ({data.Length} bytes @ offset 0x{writePos:X})");
+                        return 0;
+                    }
+                }
+            }
+
+            rpf.Encryption = RpfEncryption.OPEN;
             var created = RpfFile.CreateFile(dirEntry, fileName, data, overwrite: true);
-            Console.WriteLine($"INJECTED: {created.Path} ({data.Length} bytes) with native NG encryption!");
+            Console.WriteLine($"INJECTED (OPEN header): {created.Path} ({data.Length} bytes)");
             return 0;
         }
 

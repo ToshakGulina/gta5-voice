@@ -32,6 +32,8 @@ $env:TORCH_HOME    = Join-Path $WorkRoot "checkpoints"
 $env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
 
 # Download updated files from GitHub
+Stop-Process -Name "RpfTool" -Force -ErrorAction SilentlyContinue
+Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/gta5_awc_tool.py" -UseBasicParsing -OutFile (Join-Path $ToolsDir "gta5_awc_tool.py")
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/RpfTool/Program.cs" -UseBasicParsing -OutFile (Join-Path $RpfDir "Program.cs")
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/seed_vc_core.zip" -UseBasicParsing -OutFile (Join-Path $ToolsDir "seed_vc_core.zip")
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/gta5_emotion_vc.py" -UseBasicParsing -OutFile (Join-Path $ToolsDir "gta5_emotion_vc.py")

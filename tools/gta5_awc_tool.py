@@ -274,6 +274,7 @@ class RawChunk:
     size: int
     data: bytes
     orig_offset: int = 0
+    orig_size: int = 0
 
     @property
     def sort_order(self) -> int:
@@ -373,6 +374,7 @@ class AwcContainer:
                         size=csize,
                         data=cdata,
                         orig_offset=coffset,
+                        orig_size=csize,
                     )
                 )
 
@@ -558,7 +560,7 @@ class AwcContainer:
 
         return manifest
 
-    def repack_from_dir(self, wav_dir: Path) -> bytes:
+    def repack_from_dir(self, wav_dir: Path, lock_size: bool = False) -> bytes:
         """
         Заменяет аудиоданные из .wav файлов в wav_dir, сохраняя все остальные чанки
         (animation, gesture, markers) строго побайтово.
@@ -577,9 +579,22 @@ class AwcContainer:
                 samples, loop_pt, sr, headroom, lb, le, pe, pb, codec = struct.unpack_from(
                     "<IiHhHHHBB", fmt.data, 0
                 )
+                if lock_size and new_samples != samples:
+                    target_len = samples * 2
+                    if len(pcm) < target_len:
+                        pcm = pcm + b"\x00" * (target_len - len(pcm))
+                    else:
+                        pcm = pcm[:target_len]
+                    new_samples = samples
 
                 if codec == CODEC_ADPCM:
                     encoded, exact_samples = encode_adpcm(pcm, pad_to_2048=False)
+                    if lock_size and dat.orig_size > 0:
+                        if len(encoded) > dat.orig_size:
+                            encoded = encoded[:dat.orig_size]
+                        elif len(encoded) < dat.orig_size:
+                            encoded = encoded + b"\x00" * (dat.orig_size - len(encoded))
+                        exact_samples = samples
                 elif codec == CODEC_PCM:
                     if len(pcm) % 4 != 0:
                         pcm += b"\x00" * (4 - (len(pcm) % 4))
@@ -671,6 +686,13 @@ class AwcContainer:
                 wav_path = wav_dir / f"0x{cid:08X}.wav"
                 if wav_path.exists():
                     pcm, new_sr, new_samples = read_wav_mono16(wav_path)
+                    if lock_size and new_samples != samples:
+                        target_len = samples * 2
+                        if len(pcm) < target_len:
+                            pcm = pcm + b"\x00" * (target_len - len(pcm))
+                        else:
+                            pcm = pcm[:target_len]
+                        new_samples = samples
                     if codec == CODEC_ADPCM:
                         enc, exact_samples = encode_adpcm(pcm, pad_to_2048=True)
                     elif codec == CODEC_PCM:
@@ -823,13 +845,21 @@ class AwcContainer:
             else:
                 all_chunks.sort(key=lambda c: c.sort_order)
 
-        cur_offset = data_offset
-        for c in all_chunks:
-            if c.align > 0:
-                padc = (c.align - (cur_offset % c.align)) % c.align
-                cur_offset += padc
-            c.offset = cur_offset
-            cur_offset += c.size
+        preserve_exact_offsets = all(
+            c.orig_offset > 0 and c.size == c.orig_size for c in all_chunks
+        )
+        if preserve_exact_offsets:
+            all_chunks.sort(key=lambda c: c.orig_offset)
+            for c in all_chunks:
+                c.offset = c.orig_offset
+        else:
+            cur_offset = data_offset
+            for c in all_chunks:
+                if c.align > 0:
+                    padc = (c.align - (cur_offset % c.align)) % c.align
+                    cur_offset += padc
+                c.offset = cur_offset
+                cur_offset += c.size
 
         out = bytearray()
         out.extend(
@@ -863,10 +893,8 @@ class AwcContainer:
                 out.extend(struct.pack("<Q", raw_val))
 
         for c in all_chunks:
-            if c.align > 0:
-                padc = (c.align - (len(out) % c.align)) % c.align
-                if padc > 0:
-                    out.extend(b"\x00" * padc)
+            if c.offset > len(out):
+                out.extend(b"\x00" * (c.offset - len(out)))
             assert len(out) == c.offset, f"Offset mismatch: {len(out)} != {c.offset}"
             out.extend(c.data)
 
