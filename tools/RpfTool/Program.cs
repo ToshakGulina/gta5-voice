@@ -224,13 +224,14 @@ internal static class Program
             Console.WriteLine($"ERROR: Entry '{targetName}' not found in {rpfPath}");
             return 4;
         }
-        else if (cmd == "inject" && args.Length >= 5)
+        else if (cmd == "inject" && args.Length >= 4)
         {
             string cacheDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ng_cache");
             EnsureEncryptTables(cacheDir);
 
-            string targetDir = args[3].ToLowerInvariant().Replace('/', '\\').Trim('\\');
-            string inFile = args[4];
+            string targetDir = args.Length >= 5 ? args[3].ToLowerInvariant().Replace('/', '\\').Trim('\\') : "";
+            if (targetDir == "." || targetDir == "root") targetDir = "";
+            string inFile = args.Length >= 5 ? args[4] : args[3];
             string fileName = Path.GetFileName(inFile);
             byte[] data = File.ReadAllBytes(inFile);
 
