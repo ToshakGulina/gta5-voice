@@ -1,67 +1,29 @@
-﻿=== STEP 6: TRUE CONTOUR FIX + 3-CHANNEL CUTSCENES (PRO_MCS_2 & PRO_MCS_3_PT1) ===
-Timestamp: 2026-10-25 16:47:39
+=== STEP 6 (TRUE F0 CONTOUR + 3-CHANNEL PROLOGUE CUTSCENES) ===
+Timestamp: 2026-10-25 18:12:09
 
-Unpack EN pro_mcs_2_mastered_only.awc: ����������� �������: 3 -> D:\gta5-voice\samples\english\pro_mcs_2_mastered_only_unpacked
-Unpack RU pro_mcs_2_mastered_only.awc: python.exe : Traceback (most recent call last):
-D:\gta5-voice\step6_test_emotion_vc.ps1:53 знак:15
-+ ...   $unpRu = (& python "$ToolsDir\gta5_awc_tool.py" unpack $ruAwc $ruUn ...
-+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-  File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1209, in <module>
-    main()
-    ~~~~^^
-  File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1195, in main
-    awc = AwcContainer(Path(sys.argv[2]).read_bytes())
-                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\anton\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
-    with self.open(mode='rb', buffering=0) as f:
-         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\anton\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Users\\anton\\Downloads\\NeuroDub_GTAV_FREE_dub\\NeuroDub_
-GTAV_FREE_dub_story\\update\\x64\\dlcpacks\\patchdayng\\dlc.rpf\\x64\\audio\\sfx\\prologue.rpf\\pro_mcs_2_mastered_only
-.awc'
-Unpack EN pro_mcs_3_pt1_mastered_only.awc: ����������� �������: 3 -> D:\gta5-voice\samples\english\pro_mcs_3_pt1_mastered_only_unpacked
-Unpack RU pro_mcs_3_pt1_mastered_only.awc: python.exe : Traceback (most recent call last):
-D:\gta5-voice\step6_test_emotion_vc.ps1:53 знак:15
-+ ...   $unpRu = (& python "$ToolsDir\gta5_awc_tool.py" unpack $ruAwc $ruUn ...
-+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-  File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1209, in <module>
-    main()
-    ~~~~^^
-  File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1195, in main
-    awc = AwcContainer(Path(sys.argv[2]).read_bytes())
-                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\anton\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
-    with self.open(mode='rb', buffering=0) as f:
-         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\anton\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Users\\anton\\Downloads\\NeuroDub_GTAV_FREE_dub\\NeuroDub_
-GTAV_FREE_dub_story\\update\\x64\\dlcpacks\\patchdayng\\dlc.rpf\\x64\\audio\\sfx\\prologue.rpf\\pro_mcs_3_pt1_mastered_
-only.awc'
+=== 1. EXTRACTING & UNPACKING DRAMATIC PROLOGUE CUTSCENES ===
+Unpack EN [pro_mcs_2_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\english\pro_mcs_2_mastered_only_unpacked
+Unpack RU [pro_mcs_2_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\ru_pro_mcs_2_mastered_only_unpacked
+Unpack EN [pro_mcs_3_pt1_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\english\pro_mcs_3_pt1_mastered_only_unpacked
+Unpack RU [pro_mcs_3_pt1_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\ru_pro_mcs_3_pt1_mastered_only_unpacked
 
-=== 1. RUNNING GPU EMOTION ENHANCEMENT BATCH ===
-GPU Batch elapsed: 0.08 sec
-python.exe : Traceback (most recent call last):
-D:\gta5-voice\step6_test_emotion_vc.ps1:94 знак:11
-+ $VcOut = (& python "$ToolsDir\gta5_emotion_vc.py" --batch-json $Batch ...
-+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 23, in <module>
-    import numpy as np
-ModuleNotFoundError: No module named 'numpy'
-ERROR [engph_0x1227C3A3]: Missing D:\gta5-voice\samples\enhanced_0x1227C3A3.wav
-ERROR [pro_mcs_2_cutscene]: Missing D:\gta5-voice\samples\enhanced_pro_mcs_2.wav
-ERROR [pro_mcs_3_pt1_cutscene]: Missing D:\gta5-voice\samples\enhanced_pro_mcs_3_pt1.wav
+=== 2. RUNNING GPU BATCH EMOTION VC ===
+VC Batch Output:
+W1025 18:12:18.494000 19624 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+D:\gta5-voice\.venv\Lib\site-packages\torch\nn\utils\weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+[GTA5EmotionVC] Using device: cuda
+[GTA5EmotionVC] GPU: NVIDIA GeForce RTX 5070 Ti
+Warning: Skipped loading some keys due to shape mismatch: {'estimator.t_embedder2.mlp.2.weight', 'estimator.res_projection.weight', 'estimator.res_projection.bias', 'estimator.t_embedder2.mlp.2.bias', 'estimator.conv2.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.input_pos', 'estimator.conv2.bias', 'estimator.conv1.weight', 'estimator.conv1.bias'}
+cfm loaded
+length_regulator loaded
+Loading weights from nvidia/bigvgan_v2_44khz_128band_512x
+Removing weight norm...
+[GTA5EmotionVC] All models loaded and ready.
+[1/3] engph_0x1227C3A3 -> D:\gta5-voice\samples\enhanced_ru\engph_0x1227C3A3.wav (3.93s, P1(0.22..2.26s): F0 129->161Hz, IQR 4.5->7.5st)
+[2/3] pro_mcs_2_enhanced -> D:\gta5-voice\samples\enhanced_ru\pro_mcs_2_enhanced.wav (8.86s, [0x0A0B8E48] P1(17.40..19.09s): F0 170->209Hz, IQR 6.1->4.4st; P2(19.42..21.50s): F0 102->134Hz, IQR 5.2->4.2st; P3(21.83..23.11s): F0 131->145Hz, IQR 14.1->4.1st; P4(23.96..24.30s): F0 255->255Hz, IQR 0.0->0.0st; P5(24.83..25.20s): F0 259->259Hz, IQR 0.0->0.0st | [0x14CFDA15] P1(17.38..19.14s): F0 195->260Hz, IQR 11.7->3.7st; P2(19.34..21.37s): F0 101->124Hz, IQR 5.1->4.4st; P3(21.81..23.11s): F0 133->150Hz, IQR 14.0->4.5st; P4(23.81..25.18s): F0 233->233Hz, IQR 0.0->0.0st; P5(25.92..26.20s): F0 479->479Hz, IQR 0.0->0.0st | [0x18AC4631] P1(18.52..19.07s): F0 168->180Hz, IQR 0.9->3.8st; P2(19.42..21.37s): F0 102->130Hz, IQR 4.7->4.6st; P3(21.84..23.06s): F0 131->149Hz, IQR 13.7->2.3st)
+[3/3] pro_mcs_3_pt1_enhanced -> D:\gta5-voice\samples\enhanced_ru\pro_mcs_3_pt1_enhanced.wav (8.99s, [0x0963A618] P1(16.87..19.72s): F0 130->165Hz, IQR 8.0->3.0st; P2(19.83..21.81s): F0 120->152Hz, IQR 4.3->4.7st; P3(22.16..24.35s): F0 104->125Hz, IQR 6.8->5.5st; P4(24.45..25.98s): F0 98->115Hz, IQR 8.9->4.7st | [0x1183642A] P1(16.87..19.71s): F0 134->149Hz, IQR 7.6->8.8st; P2(19.85..21.80s): F0 120->151Hz, IQR 4.2->8.3st; P3(22.33..24.34s): F0 102->128Hz, IQR 6.9->3.3st; P4(24.45..25.95s): F0 99->118Hz, IQR 8.6->2.9st | [0x1749FC1E] P1(16.90..19.70s): F0 133->144Hz, IQR 7.4->8.7st; P2(19.85..21.80s): F0 120->153Hz, IQR 3.9->5.8st; P3(22.33..24.34s): F0 103->130Hz, IQR 6.7->4.4st; P4(24.45..25.95s): F0 99->119Hz, IQR 8.6->3.0st)
+RESULT_JSON:[{"ru_path": "D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x1227C3A3.mp3", "en_path": "D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x1227C3A3.wav", "out_path": "D:\\gta5-voice\\samples\\enhanced_ru\\engph_0x1227C3A3.wav", "out_sr": 32000, "duration_sec": 2.611, "phrases_enhanced": 1, "f0_summary": "P1(0.22..2.26s): F0 129->161Hz, IQR 4.5->7.5st", "elapsed_sec": 3.93, "name": "engph_0x1227C3A3"}, {"ru_path": "D:\\gta5-voice\\samples\\ru_pro_mcs_2_mastered_only_unpacked", "en_path": "D:\\gta5-voice\\samples\\english\\pro_mcs_2_mastered_only_unpacked", "out_path": "D:\\gta5-voice\\samples\\enhanced_ru\\pro_mcs_2_enhanced.wav", "out_sr": 48000, "duration_sec": 26.197, "phrases_enhanced": 13, "f0_summary": "[0x0A0B8E48] P1(17.40..19.09s): F0 170->209Hz, IQR 6.1->4.4st; P2(19.42..21.50s): F0 102->134Hz, IQR 5.2->4.2st; P3(21.83..23.11s): F0 131->145Hz, IQR 14.1->4.1st; P4(23.96..24.30s): F0 255->255Hz, IQR 0.0->0.0st; P5(24.83..25.20s): F0 259->259Hz, IQR 0.0->0.0st | [0x14CFDA15] P1(17.38..19.14s): F0 195->260Hz, IQR 11.7->3.7st; P2(19.34..21.37s): F0 101->124Hz, IQR 5.1->4.4st; P3(21.81..23.11s): F0 133->150Hz, IQR 14.0->4.5st; P4(23.81..25.18s): F0 233->233Hz, IQR 0.0->0.0st; P5(25.92..26.20s): F0 479->479Hz, IQR 0.0->0.0st | [0x18AC4631] P1(18.52..19.07s): F0 168->180Hz, IQR 0.9->3.8st; P2(19.42..21.37s): F0 102->130Hz, IQR 4.7->4.6st; P3(21.84..23.06s): F0 131->149Hz, IQR 13.7->2.3st", "elapsed_sec": 8.86, "name": "pro_mcs_2_enhanced"}, {"ru_path": "D:\\gta5-voice\\samples\\ru_pro_mcs_3_pt1_mastered_only_unpacked", "en_path": "D:\\gta5-voice\\samples\\english\\pro_mcs_3_pt1_mastered_only_unpacked", "out_path": "D:\\gta5-voice\\samples\\enhanced_ru\\pro_mcs_3_pt1_enhanced.wav", "out_sr": 48000, "duration_sec": 26.701, "phrases_enhanced": 12, "f0_summary": "[0x0963A618] P1(16.87..19.72s): F0 130->165Hz, IQR 8.0->3.0st; P2(19.83..21.81s): F0 120->152Hz, IQR 4.3->4.7st; P3(22.16..24.35s): F0 104->125Hz, IQR 6.8->5.5st; P4(24.45..25.98s): F0 98->115Hz, IQR 8.9->4.7st | [0x1183642A] P1(16.87..19.71s): F0 134->149Hz, IQR 7.6->8.8st; P2(19.85..21.80s): F0 120->151Hz, IQR 4.2->8.3st; P3(22.33..24.34s): F0 102->128Hz, IQR 6.9->3.3st; P4(24.45..25.95s): F0 99->118Hz, IQR 8.6->2.9st | [0x1749FC1E] P1(16.90..19.70s): F0 133->144Hz, IQR 7.4->8.7st; P2(19.85..21.80s): F0 120->153Hz, IQR 3.9->5.8st; P3(22.33..24.34s): F0 103->130Hz, IQR 6.7->4.4st; P4(24.45..25.95s): F0 99->119Hz, IQR 8.6->3.0st", "elapsed_sec": 8.99, "name": "pro_mcs_3_pt1_enhanced"}]
 
 === END OF STEP 6 REPORT ===
