@@ -1,89 +1,31 @@
-﻿=== STEP 6 (FIXED): NATIVE RPF NG INJECTION + RTX 5070 Ti EMOTION VC TEST ===
-Timestamp: 2026-10-25 15:23:51
+﻿=== STEP 6 (HIGH-EXPRESSIVENESS BATCH): RTX 5070 Ti EMOTION VC TEST ===
+Timestamp: 2026-10-25 15:41:30
 
-RpfTool build: ; Build succeeded.;     0 Warning(s);     0 Error(s); ; Time Elapsed 00:00:01.98
-=== 1. TESTING RPF NG INJECTION WITH '.' ROOT ARGUMENT ===
-RPF Inject output:
-INJECTED IN-PLACE (native NG header preserved, 0 header changes): prologue.rpf\pro_mcs_1_mastered_only.awc (524368 bytes @ offset 0x100400)
-
-=== 2. CHECKING PYTORCH CU128 VENV ON D:\gta5-voice\.venv ===
-GPU Check: Torch: 2.11.0+cu128 CUDA: True Device: NVIDIA GeForce RTX 5070 Ti
-
-=== 3. RE-UNPACKING VBR MP3s (WITH XING HEADER) & RUNNING EMOTION VC ===
-VC Sample 1 (engph):
-W1025 15:24:02.580000 23604 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+VC Batch Output:
+W1025 15:41:36.122000 25916 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
 [GTA5EmotionVC] Loading 44.1kHz F0-Conditioned Seed-VC models on cuda...
-Warning: Skipped loading some keys due to shape mismatch: {'estimator.t_embedder2.mlp.2.weight', 'estimator.conv2.bias', 'estimator.conv2.weight', 'estimator.input_pos', 'estimator.t_embedder2.mlp.2.bias', 'estimator.conv1.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.res_projection.bias', 'estimator.res_projection.weight', 'estimator.conv1.weight'}
+Warning: Skipped loading some keys due to shape mismatch: {'estimator.res_projection.bias', 'estimator.conv2.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.input_pos', 'estimator.conv1.bias', 'estimator.conv2.weight', 'estimator.conv1.weight', 'estimator.t_embedder2.mlp.2.weight', 'estimator.t_embedder2.mlp.2.bias', 'estimator.t_embedder2.mlp.0.bias', 'estimator.res_projection.weight'}
 cfm loaded
 length_regulator loaded
 Loading weights from nvidia/bigvgan_v2_44khz_128band_512x
 Removing weight norm...
 System.Management.Automation.RemoteException
 Loading weights:   0%|          | 0/479 [00:00<?, ?it/s]
-Loading weights:  27%|██▋       | 131/479 [00:00<00:00, 1269.60it/s]
-Loading weights:  54%|█████▍    | 258/479 [00:00<00:00, 776.19it/s] 
-Loading weights:  72%|███████▏  | 346/479 [00:00<00:00, 743.11it/s]
-Loading weights: 100%|██████████| 479/479 [00:00<00:00, 1038.84it/s]
+Loading weights:  27%|██▋       | 130/479 [00:00<00:00, 1267.92it/s]
+Loading weights:  54%|█████▎    | 257/479 [00:00<00:00, 944.42it/s] 
+Loading weights:  75%|███████▍  | 357/479 [00:00<00:00, 827.07it/s]
+Loading weights: 100%|██████████| 479/479 [00:00<00:00, 1144.59it/s]
 [GTA5EmotionVC] All models loaded and ready.
-System.Management.Automation.RemoteException
-  0%|          | 0/25 [00:00<?, ?it/s]
- 16%|█▌        | 4/25 [00:00<00:00, 32.67it/s]
- 32%|███▏      | 8/25 [00:00<00:00, 35.46it/s]
- 48%|████▊     | 12/25 [00:00<00:00, 35.35it/s]
- 64%|██████▍   | 16/25 [00:00<00:00, 36.67it/s]
- 84%|████████▍ | 21/25 [00:00<00:00, 39.44it/s]
-100%|██████████| 25/25 [00:00<00:00, 39.48it/s]
-100%|██████████| 25/25 [00:00<00:00, 37.92it/s]
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x0769AE27.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x0769AE27.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\engph_0x0769AE27.wav', 'duration_sec': 2.755, 'phrases_converted': 1, 'f0_summary': ['P1(0.17..2.36s): 125.4Hz->135.1Hz'], 'elapsed_sec': 18.71}
-VC Sample 2 (pro_mcs_1):
-W1025 15:24:34.626000 15448 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-[GTA5EmotionVC] Loading 44.1kHz F0-Conditioned Seed-VC models on cuda...
-Warning: Skipped loading some keys due to shape mismatch: {'estimator.res_projection.weight', 'estimator.conv2.bias', 'estimator.conv2.weight', 'estimator.input_pos', 'estimator.t_embedder2.mlp.2.bias', 'estimator.res_projection.bias', 'estimator.t_embedder2.mlp.2.weight', 'estimator.t_embedder2.mlp.0.weight', 'estimator.conv1.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.conv1.bias'}
-cfm loaded
-length_regulator loaded
-Loading weights from nvidia/bigvgan_v2_44khz_128band_512x
-Removing weight norm...
-System.Management.Automation.RemoteException
-Loading weights:   0%|          | 0/479 [00:00<?, ?it/s]
-Loading weights:  20%|██        | 97/479 [00:00<00:00, 953.28it/s]
-Loading weights:  41%|████      | 197/479 [00:00<00:00, 979.28it/s]
-Loading weights:  62%|██████▏   | 295/479 [00:00<00:00, 834.83it/s]
-Loading weights: 100%|██████████| 479/479 [00:00<00:00, 1243.81it/s]
-[GTA5EmotionVC] All models loaded and ready.
-System.Management.Automation.RemoteException
-  0%|          | 0/25 [00:00<?, ?it/s]
- 12%|█▏        | 3/25 [00:00<00:00, 25.60it/s]
- 24%|██▍       | 6/25 [00:00<00:00, 19.48it/s]
- 36%|███▌      | 9/25 [00:00<00:01, 15.30it/s]
- 44%|████▍     | 11/25 [00:00<00:00, 14.06it/s]
- 56%|█████▌    | 14/25 [00:00<00:00, 15.40it/s]
- 64%|██████▍   | 16/25 [00:01<00:00, 13.91it/s]
- 72%|███████▏  | 18/25 [00:01<00:00, 12.91it/s]
- 80%|████████  | 20/25 [00:01<00:00, 12.41it/s]
- 88%|████████▊ | 22/25 [00:01<00:00, 12.51it/s]
- 96%|█████████▌| 24/25 [00:01<00:00, 13.24it/s]
-100%|██████████| 25/25 [00:01<00:00, 14.44it/s]
-System.Management.Automation.RemoteException
-  0%|          | 0/25 [00:00<?, ?it/s]
- 16%|█▌        | 4/25 [00:00<00:00, 31.27it/s]
- 32%|███▏      | 8/25 [00:00<00:00, 26.07it/s]
- 44%|████▍     | 11/25 [00:00<00:00, 23.05it/s]
- 56%|█████▌    | 14/25 [00:00<00:00, 23.84it/s]
- 68%|██████▊   | 17/25 [00:00<00:00, 24.36it/s]
- 80%|████████  | 20/25 [00:00<00:00, 22.03it/s]
- 92%|█████████▏| 23/25 [00:00<00:00, 22.70it/s]
-100%|██████████| 25/25 [00:01<00:00, 23.85it/s]
-System.Management.Automation.RemoteException
-  0%|          | 0/25 [00:00<?, ?it/s]
- 12%|█▏        | 3/25 [00:00<00:00, 28.54it/s]
- 28%|██▊       | 7/25 [00:00<00:00, 30.50it/s]
- 44%|████▍     | 11/25 [00:00<00:00, 25.82it/s]
- 60%|██████    | 15/25 [00:00<00:00, 27.66it/s]
- 76%|███████▌  | 19/25 [00:00<00:00, 30.60it/s]
- 92%|█████████▏| 23/25 [00:00<00:00, 32.67it/s]
-100%|██████████| 25/25 [00:00<00:00, 29.82it/s]
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_pro_mcs_1_mastered_only_unpacked\\0x00E9E7B7.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\pro_mcs_1_mastered_only_unpacked\\0x00E9E7B7.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\pro_mcs_1_0x00E9E7B7.wav', 'duration_sec': 16.477, 'phrases_converted': 3, 'f0_summary': ['P1(9.10..9.92s): 114.6Hz->113.0Hz', 'P2(10.14..12.12s): 127.2Hz->131.8Hz', 'P3(12.64..14.00s): 84.6Hz->84.1Hz'], 'elapsed_sec': 22.81}
+Traceback (most recent call last):
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 642, in <module>
+    main()
+    ~~~~^^
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 618, in main
+    items = json.loads(Path(args.batch_json).read_text(encoding="utf-8"))
+  File "C:\Users\anton\AppData\Local\Python\pythoncore-3.14-64\Lib\json\__init__.py", line 341, in loads
+    raise JSONDecodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)",
+                          s, 0)
+json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)
 
 === END OF STEP 6 REPORT ===
