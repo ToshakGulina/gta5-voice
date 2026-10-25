@@ -1,0 +1,200 @@
+﻿=== STEP 3: BUILD RPFTOOL & EXTRACT ORIGINAL ENGLISH AWC FROM LEGACY ===
+Timestamp: 2026-10-25 12:30:04
+
+=== 1. BUILDING RpfTool (.NET 8 + CodeWalker.Core) ===
+
+╨Т╨░╤Б ╨┐╤А╨╕╨▓╨╡╤В╤Б╤В╨▓╤Г╨╡╤В .NET┬а8.0!
+---------------------
+╨Т╨╡╤А╤Б╨╕╤П ╨┐╨░╨║╨╡╤В╨░ SDK: 8.0.426
+
+╨в╨╡╨╗╨╡╨╝╨╡╤В╤А╨╕╤П
+---------
+╨б╤А╨╡╨┤╤Б╤В╨▓╨░ .NET ╤Б╨╛╨▒╨╕╤А╨░╤О╤В ╨┤╨░╨╜╨╜╤Л╨╡ ╨╛╨▒ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╨╜╨╕╨╕ ╨┤╨╗╤П ╨┐╨╛╨▓╤Л╤И╨╡╨╜╨╕╤П ╤Г╨┤╨╛╨▒╤Б╤В╨▓╨░. ╨Ф╨░╨╜╨╜╤Л╨╡ ╤Б╨╛╨▒╨╕╤А╨░╤О╤В╤Б╤П ╨║╨╛╤А╨┐╨╛╤А╨░╤Ж╨╕╨╡╨╣ ╨Ь╨░╨╣╨║╤А╨╛╤Б╨╛╤Д╤В ╨╕ ╨┐╤А╨╡╨┤╨╛╤Б╤В╨░╨▓╨╗╤П╤О╤В╤Б╤П ╤Б╨╛╨╛╨▒╤Й╨╡╤Б╤В╨▓╤Г. ╨Т╤Л ╨╝╨╛╨╢╨╡╤В╨╡ ╨╛╤В╨║╨╗╤О╤З╨╕╤В╤М ╨╛╤В╨┐╤А╨░╨▓╨║╤Г ╨┤╨░╨╜╨╜╤Л╤Е ╤В╨╡╨╗╨╡╨╝╨╡╤В╤А╨╕╨╕, ╤Г╤Б╤В╨░╨╜╨╛╨▓╨╕╨▓ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ "1" ╨╕╨╗╨╕ "true" ╨┤╨╗╤П ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╨╛╨╣ ╤Б╤А╨╡╨┤╤Л DOTNET_CLI_TELEMETRY_OPTOUT ╨▓ ╨┐╨╛╨┤╤Е╨╛╨┤╤П╤Й╨╡╨╣ ╨╛╨▒╨╛╨╗╨╛╤З╨║╨╡.
+
+╨Ф╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╤Л╨╡ ╤Б╨▓╨╡╨┤╨╡╨╜╨╕╤П ╨╛ ╤Б╨▒╨╛╤А╨╡ ╨┤╨░╨╜╨╜╤Л╤Е ╤В╨╡╨╗╨╡╨╝╨╡╤В╤А╨╕╨╕ ╤Б╤А╨╡╨┤╤Б╤В╨▓╨░╨╝╨╕ CLI .NET ╤Б╨╝. ╨╜╨░ ╤Б╤В╤А╨░╨╜╨╕╤Ж╨╡ https://aka.ms/dotnet-cli-telemetry.
+
+----------------
+╨г╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜ ╤Б╨╡╤А╤В╨╕╤Д╨╕╨║╨░╤В ╤А╨░╨╖╤А╨░╨▒╨╛╤В╨║╨╕ ASP.NET Core HTTPS.
+╨з╤В╨╛╨▒╤Л ╨┤╨╛╨▓╨╡╤А╤П╤В╤М ╤Б╨╡╤А╤В╨╕╤Д╨╕╨║╨░╤В╤Г, ╨▓╤Л╨┐╨╛╨╗╨╜╨╕╤В╨╡ ╨║╨╛╨╝╨░╨╜╨┤╤Г "dotnet dev-certs https --trust"
+╨Ф╨╛╨┐╨╛╨╗╨╜╨╕╤В╨╡╨╗╤М╨╜╤Л╨╡ ╤Б╨▓╨╡╨┤╨╡╨╜╨╕╤П ╨╛╨▒ HTTPS: https://aka.ms/dotnet-https
+
+----------------
+╨Ъ╨░╨║ ╨╜╨░╨┐╨╕╤Б╨░╤В╤М ╤Б╨▓╨╛╨╡ ╨┐╨╡╤А╨▓╨╛╨╡ ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╨╡: https://aka.ms/dotnet-hello-world
+╨г╨╖╨╜╨░╤В╤М ╨╛ ╨╜╨╛╨▓╤Л╤Е ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╤П╤Е: https://aka.ms/dotnet-whats-new
+╨Я╤А╨╛╤Б╨╝╨╛╤В╤А╨╡╤В╤М ╨┤╨╛╨║╤Г╨╝╨╡╨╜╤В╨░╤Ж╨╕╤О: https://aka.ms/dotnet-docs
+╨б╨╛╨╛╨▒╤Й╨╕╤В╤М ╨╛ ╨┐╤А╨╛╨▒╨╗╨╡╨╝╨░╤Е ╨╕ ╨╜╨░╨╣╤В╨╕ ╨╕╤Б╤Е╨╛╨┤╨╜╤Л╨╣ ╨║╨╛╨┤ ╨╜╨░ GitHub: https://github.com/dotnet/core
+╨Ф╨╗╤П ╨┐╤А╨╛╤Б╨╝╨╛╤В╤А╨░ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╤Л╤Е ╨║╨╛╨╝╨░╨╜╨┤ ╨▓╨▓╨╡╨┤╨╕╤В╨╡ ╨║╨╛╨╝╨░╨╜╨┤╤Г "dotnet --help" ╨╕╨╗╨╕ ╨┐╨╛╤Б╨╡╤В╨╕╤В╨╡ ╤Б╨╗╨╡╨┤╤Г╤О╤Й╤Г╤О ╤Б╤В╤А╨░╨╜╨╕╤Ж╤Г: https://aka.ms/dotnet-cli.
+--------------------------------------------------------------------------------------
+  ╨Ю╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨┐╤А╨╛╨╡╨║╤В╨╛╨▓ ╨┤╨╗╤П ╨▓╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╕╤П...
+  ╨Т╨╛╤Б╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜ D:\gta5-voice\tools\RpfTool\RpfTool.csproj (╨╖╨░ 6,46┬а╤Б).
+  RpfTool -> D:\gta5-voice\tools\RpfTool\bin\Release\net8.0\RpfTool.dll
+
+╨б╨▒╨╛╤А╨║╨░ ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.
+    ╨Я╤А╨╡╨┤╤Г╨┐╤А╨╡╨╢╨┤╨╡╨╜╨╕╨╣: 0
+    ╨Ю╤И╨╕╨▒╨╛╨║: 0
+
+╨Я╤А╨╛╤И╨╗╨╛ ╨▓╤А╨╡╨╝╨╡╨╜╨╕ 00:00:08.34
+RpfTool.exe exists: True
+
+=== 2. EXTRACTING ENGLISH AWC FILES FROM GTA V LEGACY ===
+Extracting pro_mcs_1_mastered_only.awc from D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV\x64\audio\sfx\PROLOGUE.rpf...
+EXTRACTED: prologue.rpf\pro_mcs_1_mastered_only.awc (524368 bytes) -> D:\gta5-voice\samples\english\pro_mcs_1_mastered_only.awc
+English AWC Info for pro_mcs_1_mastered_only.awc:
+{
+  "version": 1,
+  "flags": "0xFF0C",
+  "multi_channel": true,
+  "single_channel_encrypted": false,
+  "multi_channel_encrypted": true,
+  "stream_count": 2,
+  "streams": [
+    {
+      "id_hex": "0x00000000",
+      "chunks": [
+        "streamformat",
+        "data",
+        "seektable"
+      ]
+    },
+    {
+      "id_hex": "0x00E9E7B7",
+      "chunks": [],
+      "channel_index": 0,
+      "samples": 787200,
+      "sample_rate": 48000,
+      "duration_sec": 16.4,
+      "codec": "ADPCM",
+      "headroom": -191
+    }
+  ],
+  "mc_block_count": 1,
+  "mc_block_size": 524288,
+  "mc_channel_count": 1
+}
+English Unpack Result: ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\english\pro_mcs_1_mastered_only_unpacked
+Extracting ah_1_mcs_1_mastered_only.awc from D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV\x64\audio\sfx\CUTSCENE_MASTERED_ONLY.rpf...
+EXTRACTED: cutscene_mastered_only.rpf\ah_1_mcs_1_mastered_only.awc (1048672 bytes) -> D:\gta5-voice\samples\english\ah_1_mcs_1_mastered_only.awc
+English AWC Info for ah_1_mcs_1_mastered_only.awc:
+{
+  "version": 1,
+  "flags": "0xFF05",
+  "multi_channel": true,
+  "single_channel_encrypted": false,
+  "multi_channel_encrypted": false,
+  "stream_count": 2,
+  "streams": [
+    {
+      "id_hex": "0x00000000",
+      "chunks": [
+        "streamformat",
+        "data",
+        "seektable"
+      ]
+    },
+    {
+      "id_hex": "0x182B26EC",
+      "chunks": [],
+      "channel_index": 0,
+      "samples": 1660800,
+      "sample_rate": 48000,
+      "duration_sec": 34.6,
+      "codec": "ADPCM",
+      "headroom": -191
+    }
+  ],
+  "mc_block_count": 2,
+  "mc_block_size": 524288,
+  "mc_channel_count": 1
+}
+English Unpack Result: ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\english\ah_1_mcs_1_mastered_only_unpacked
+Extracting engph.awc from D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV\x64\audio\sfx\SS_DE.rpf...
+EXTRACTED: ss_de.rpf\engph.awc (192722 bytes) -> D:\gta5-voice\samples\english\engph.awc
+English AWC Info for engph.awc:
+{
+  "version": 1,
+  "flags": "0xFF0A",
+  "multi_channel": false,
+  "single_channel_encrypted": true,
+  "multi_channel_encrypted": true,
+  "stream_count": 5,
+  "streams": [
+    {
+      "id_hex": "0x0769AE27",
+      "chunks": [
+        "data",
+        "format",
+        "animation",
+        "peak"
+      ],
+      "samples": 62720,
+      "sample_rate": 32000,
+      "duration_sec": 1.96,
+      "codec": "ADPCM",
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x0B157587",
+      "chunks": [
+        "data",
+        "format",
+        "animation",
+        "peak"
+      ],
+      "samples": 87467,
+      "sample_rate": 32000,
+      "duration_sec": 2.733,
+      "codec": "ADPCM",
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x1227C3A3",
+      "chunks": [
+        "data",
+        "format",
+        "animation",
+        "peak"
+      ],
+      "samples": 80409,
+      "sample_rate": 32000,
+      "duration_sec": 2.513,
+      "codec": "ADPCM",
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x18D6D10A",
+      "chunks": [
+        "data",
+        "format",
+        "animation",
+        "peak"
+      ],
+      "samples": 71866,
+      "sample_rate": 32000,
+      "duration_sec": 2.246,
+      "codec": "ADPCM",
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x1CBD98CE",
+      "chunks": [
+        "data",
+        "format",
+        "animation",
+        "peak"
+      ],
+      "samples": 52380,
+      "sample_rate": 32000,
+      "duration_sec": 1.637,
+      "codec": "ADPCM",
+      "headroom": 110
+    }
+  ]
+}
+English Unpack Result: ╨рёяръютрэю яюЄюъют: 5 -> D:\gta5-voice\samples\english\engph_unpacked
+
+=== 3. UNPACKING NERUAL RUSSIAN AWC WITH UPDATED MP3 SUPPORT ===
+Russian Unpack (pro_mcs_1_mastered_only.awc): ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\ru_pro_mcs_1_mastered_only_unpacked
+Russian Unpack (ah_1_mcs_1_mastered_only.awc): ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\ru_ah_1_mcs_1_mastered_only_unpacked
+Russian Unpack (engph.awc): ╨рёяръютрэю яюЄюъют: 5 -> D:\gta5-voice\samples\ru_engph_unpacked
+
+=== END OF STEP 3 REPORT ===
