@@ -1,0 +1,74 @@
+﻿=== STEP 6: NATIVE RPF NG INJECTION + RTX 5070 Ti EMOTION VC TEST ===
+Timestamp: 2026-10-25 13:32:45
+
+RpfTool build: ; ╨б╨▒╨╛╤А╨║╨░ ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.;     ╨Я╤А╨╡╨┤╤Г╨┐╤А╨╡╨╢╨┤╨╡╨╜╨╕╨╣: 0;     ╨Ю╤И╨╕╨▒╨╛╨║: 0; ; ╨Я╤А╨╛╤И╨╗╨╛ ╨▓╤А╨╡╨╝╨╡╨╜╨╕ 00:00:02.18
+=== 1. TESTING RPF NG INJECTION WITH '.' ROOT ARGUMENT ===
+RPF Inject output:
+Generating NG Encryption LUTs (one-time setup, ~3 seconds)...
+Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
+   at CodeWalker.GameFiles.CryptoIO.WriteNgTables(String fileName, UInt32[][][] tableData)
+   at Program.EnsureEncryptTables(String cacheDir) in D:\gta5-voice\tools\RpfTool\Program.cs:line 57
+   at Program.Main(String[] args) in D:\gta5-voice\tools\RpfTool\Program.cs:line 229
+
+=== 2. SETTING UP PYTORCH CU128 VENV ON D:\gta5-voice\.venv ===
+pip torch cu128: 
+pip deps: 
+GPU Check: Torch: 2.11.0+cu128 CUDA: True Device: NVIDIA GeForce RTX 5070 Ti
+
+=== 3. RUNNING EMOTION & TIMBRE TRANSFER ON SAMPLE FILES ===
+VC Sample 1 (engph):
+W1025 13:36:27.225000 21008 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+D:\gta5-voice\.venv\Lib\site-packages\torch\nn\utils\weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+[GTA5EmotionVC] Loading 44.1kHz F0-Conditioned Seed-VC models on cuda...
+Warning: Skipped loading some keys due to shape mismatch: {'estimator.conv2.weight', 'estimator.input_pos', 'estimator.conv1.bias', 'estimator.t_embedder2.mlp.2.weight', 'estimator.conv2.bias', 'estimator.res_projection.weight', 'estimator.t_embedder2.mlp.2.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.conv1.weight', 'estimator.res_projection.bias'}
+cfm loaded
+length_regulator loaded
+Traceback (most recent call last):
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 416, in <module>
+    main()
+    ~~~~^^
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 403, in main
+    engine = GTA5EmotionVC(args.seed_vc_dir)
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 147, in __init__
+    self.vocoder = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=False)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\gta5-voice\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "D:\gta5-voice\.venv\Lib\site-packages\huggingface_hub\hub_mixin.py", line 550, in from_pretrained
+    instance = cls._from_pretrained(
+        model_id=str(model_id),
+    ...<5 lines>...
+        **model_kwargs,
+    )
+TypeError: BigVGAN._from_pretrained() missing 2 required keyword-only arguments: 'proxies' and 'resume_download'
+VC Sample 2 (pro_mcs_1):
+W1025 13:37:10.538000 25032 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+D:\gta5-voice\.venv\Lib\site-packages\torch\nn\utils\weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+[GTA5EmotionVC] Loading 44.1kHz F0-Conditioned Seed-VC models on cuda...
+Warning: Skipped loading some keys due to shape mismatch: {'estimator.conv2.bias', 'estimator.conv1.weight', 'estimator.res_projection.weight', 'estimator.input_pos', 'estimator.t_embedder2.mlp.0.weight', 'estimator.t_embedder2.mlp.2.weight', 'estimator.conv2.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.res_projection.bias', 'estimator.t_embedder2.mlp.2.bias', 'estimator.conv1.bias'}
+cfm loaded
+length_regulator loaded
+Traceback (most recent call last):
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 416, in <module>
+    main()
+    ~~~~^^
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 403, in main
+    engine = GTA5EmotionVC(args.seed_vc_dir)
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 147, in __init__
+    self.vocoder = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=False)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\gta5-voice\.venv\Lib\site-packages\huggingface_hub\utils\_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "D:\gta5-voice\.venv\Lib\site-packages\huggingface_hub\hub_mixin.py", line 550, in from_pretrained
+    instance = cls._from_pretrained(
+        model_id=str(model_id),
+    ...<5 lines>...
+        **model_kwargs,
+    )
+TypeError: BigVGAN._from_pretrained() missing 2 required keyword-only arguments: 'proxies' and 'resume_download'
+
+=== END OF STEP 6 REPORT ===
