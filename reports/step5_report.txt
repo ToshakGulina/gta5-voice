@@ -1,0 +1,51 @@
+﻿=== STEP 5: RPF NG ROUND-TRIP (EXACT FILENAME) + RTX 5070 Ti PYTORCH CHECK ===
+Timestamp: 2026-10-25 13:10:32
+
+=== 1. FULL ROUND-TRIP WITH EXACT RPF FILENAME (rpf_test\PROLOGUE.rpf) ===
+AWC Repack result: ╙яръютрэ эют√щ AWC (524368 срщЄ) -> D:\gta5-voice\samples\repacked_awc\pro_mcs_1_mastered_only.awc
+RPF Inject result: 
+RPF Verify Extract result: EXTRACTED (decrypted): prologue.rpf\pro_mcs_1_mastered_only.awc (524368 bytes) -> D:\gta5-voice\samples\rpf_test\verify_pro_mcs_1_mastered_only.awc
+Verified AWC Info after RPF round-trip:
+{
+  "version": 1,
+  "flags": "0xFF04",
+  "multi_channel": true,
+  "single_channel_encrypted": false,
+  "multi_channel_encrypted": false,
+  "stream_count": 2,
+  "streams": [
+    {
+      "id_hex": "0x00000000",
+      "chunks": [
+        "streamformat",
+        "data",
+        "seektable"
+      ]
+    },
+    {
+      "id_hex": "0x00E9E7B7",
+      "chunks": [],
+      "channel_index": 0,
+      "samples": 787200,
+      "sample_rate": 48000,
+      "duration_sec": 16.4,
+      "codec": "ADPCM",
+      "headroom": -191
+    }
+  ],
+  "mc_block_count": 1,
+  "mc_block_size": 524288,
+  "mc_channel_count": 1
+}
+Verified WAV Unpack after RPF round-trip: ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\rpf_test\verify_wav
+
+=== 2. PYTHON & RTX 5070 Ti (BLACKWELL sm_120) CHECK ===
+Python: 3.14.8 (tags/v3.14.8:8e6e75d, Sep 30 2026, 18:19:33) [MSC v.1944 64 bit (AMD64)]
+Torch check: No module named 'torch'
+
+=== 3. HUGGING FACE MODEL ACCESS CHECK FROM USER PC ===
+HF OK [200]: https://huggingface.co/api/models/Plachta/Seed-VC
+HF OK [200]: https://huggingface.co/api/models/Misha24-10/F5-TTS_RUSSIAN
+HF ERROR: https://huggingface.co/api/models/Systran/faster-whisper-large-v3-turbo -> Удаленный сервер возвратил ошибку: (401) Несанкционированный.
+
+=== END OF STEP 5 REPORT ===
