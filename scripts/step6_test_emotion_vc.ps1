@@ -15,7 +15,6 @@ $ErrorActionPreference = "Continue"
 
 $WorkRoot   = "D:\gta5-voice"
 $ToolsDir   = Join-Path $WorkRoot "tools"
-$RpfDir     = Join-Path $ToolsDir "RpfTool"
 $ReportDir  = Join-Path $WorkRoot "reports"
 $SampleDir  = Join-Path $WorkRoot "samples"
 $EngDir     = Join-Path $SampleDir "english"
@@ -23,12 +22,15 @@ $EnhDir     = Join-Path $SampleDir "enhanced_ru"
 $VenvDir    = Join-Path $WorkRoot ".venv"
 $PipCache   = Join-Path $WorkRoot "pip_cache"
 $SeedVcDir  = Join-Path $ToolsDir "seed_vc_core"
+$StoryRoot  = Join-Path $NerualDir "NeuroDub_GTAV_FREE_dub_story"
 
 New-Item -ItemType Directory -Force -Path $EnhDir, $PipCache, $SeedVcDir | Out-Null
 $env:PIP_CACHE_DIR = $PipCache
 $env:HF_HOME       = Join-Path $WorkRoot "checkpoints"
 $env:TORCH_HOME    = Join-Path $WorkRoot "checkpoints"
 $env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
+$env:HF_HUB_DISABLE_PROGRESS_BARS = "1"
+$env:TQDM_DISABLE = "1"
 
 # Download updated files from GitHub
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/gta5_awc_tool.py" -UseBasicParsing -OutFile (Join-Path $ToolsDir "gta5_awc_tool.py")
@@ -74,11 +76,20 @@ $VenvPy = Join-Path $VenvDir "Scripts\python.exe"
 $AwcTool = Join-Path $ToolsDir "gta5_awc_tool.py"
 $VcScript = Join-Path $ToolsDir "gta5_emotion_vc.py"
 
-# Unpack all 3 Russian sample AWCs with Xing VBR headers
-& $VenvPy $AwcTool unpack (Join-Path $SampleDir "engph.awc") (Join-Path $SampleDir "ru_engph_unpacked") | Out-Null
-& $VenvPy $AwcTool unpack (Join-Path $SampleDir "pro_mcs_1_mastered_only.awc") (Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked") | Out-Null
-& $VenvPy $AwcTool unpack (Join-Path $SampleDir "ah_1_mcs_1_mastered_only.awc") (Join-Path $SampleDir "ru_ah_1_mcs_1_mastered_only_unpacked") | Out-Null
+# Unpack all 3 Russian sample AWCs from $StoryRoot with Xing VBR headers and log output
+Add-Line "=== 1. UNPACKING RUSSIAN AWC SAMPLES (WITH XING VBR HEADERS) ==="
+$RuAwcList = @(
+    @{ Src = (Join-Path $StoryRoot "x64\audio\sfx\SS_DE.rpf\engph.awc");                        Dst = (Join-Path $SampleDir "ru_engph_unpacked") },
+    @{ Src = (Join-Path $StoryRoot "x64\audio\sfx\PROLOGUE.rpf\pro_mcs_1_mastered_only.awc");   Dst = (Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked") },
+    @{ Src = (Join-Path $StoryRoot "x64\audio\sfx\CUTSCENE_MASTERED_ONLY.rpf\ah_1_mcs_1_mastered_only.awc"); Dst = (Join-Path $SampleDir "ru_ah_1_mcs_1_mastered_only_unpacked") }
+)
+foreach ($item in $RuAwcList) {
+    $uOut = & $VenvPy $AwcTool unpack $item.Src $item.Dst 2>&1
+    Add-Line ("Unpack [" + (Split-Path $item.Src -Leaf) + "]: " + ($uOut -join "; "))
+}
+Add-Line ""
 
+Add-Line "=== 2. RUNNING GPU BATCH EMOTION VC ON 4 SAMPLES ==="
 $BatchJsonPath = Join-Path $SampleDir "vc_batch.json"
 $BatchItems = @(
     @{
@@ -103,7 +114,8 @@ $BatchItems = @(
     }
 )
 $BatchJson = $BatchItems | ConvertTo-Json -Depth 4
-[System.IO.File]::WriteAllText($BatchJsonPath, $BatchJson, [System.Text.Encoding]::UTF8)
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($BatchJsonPath, $BatchJson, $Utf8NoBom)
 
 Write-Host "Running single-load GPU batch on 4 sample files (engph x2, pro_mcs_1, ah_1_mcs_1 35s cutscene)..." -ForegroundColor Cyan
 $vcOut = & $VenvPy $VcScript --seed-vc-dir $SeedVcDir --batch-json $BatchJsonPath 2>&1
@@ -122,5 +134,5 @@ if (Test-Path $Out4) { Send-ToGitHub -LocalFile $Out4 -RepoPath "samples/enhance
 Add-Line ""
 Add-Line "=== END OF STEP 6 REPORT ==="
 
-[System.IO.File]::WriteAllLines($TxtReport, $Lines, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllLines($TxtReport, $Lines, $Utf8NoBom)
 Send-ToGitHub -LocalFile $TxtReport -RepoPath "reports/step6_report.txt"

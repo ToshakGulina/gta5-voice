@@ -26,14 +26,17 @@ import time
 import warnings
 from pathlib import Path
 
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["TQDM_DISABLE"] = "1"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+warnings.simplefilter("ignore")
+
 import numpy as np
 import scipy.signal
 import soundfile as sf
 import torch
 import torchaudio
 import yaml
-
-warnings.simplefilter("ignore")
 
 
 def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
@@ -615,7 +618,7 @@ def main():
 
     engine = GTA5EmotionVC(seed_vc_dir=args.seed_vc_dir)
     if args.batch_json:
-        items = json.loads(Path(args.batch_json).read_text(encoding="utf-8"))
+        items = json.loads(Path(args.batch_json).read_text(encoding="utf-8-sig"))
         for item in items:
             info = engine.process_file(
                 ru_path=item["ru"],
