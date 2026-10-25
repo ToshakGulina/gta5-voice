@@ -415,34 +415,60 @@ class GTA5EmotionVC:
                     245.0 if is_male else 420.0,
                 )
 
-            # Strong dynamic inflection expansion (1.65x .. 2.15x) + 55% English pitch contour transfer
-            dev_ru = np.clip(log_f0_ru - med_ru, -0.42, 0.45)
-            dyn_ratio = float(np.clip(emotion_scale, 1.55, 2.15))
+            # Macro/Micro Pitch Decomposition:
+            # Instead of amplifying the Russian TTS's wrong/flat sentence intonation (macro_ru),
+            # we decompose log_f0_ru into:
+            #   macro_ru (150ms moving average = sentence intonation arch)
+            #   micro_ru = log_f0_ru - macro_ru (fast syllable/consonant articulation)
+            # and REPLACE macro_ru with the English actor's sentence intonation (macro_en)
+            # mapped from the English active voiced span [v_en_0..v_en_1] -> [v_ru_0..v_ru_1]!
+            t_ru = np.arange(len(log_f0_ru))
+            ru_idx = np.where(voiced_ru)[0]
+            v_ru_0, v_ru_1 = int(ru_idx[0]), int(ru_idx[-1])
 
-            if np.sum(voiced_en) >= 8 and contour_blend > 0.0:
-                log_f0_en = np.log(np.maximum(F0_en_np, 1e-5))
+            dev_ru_voiced = np.clip(log_f0_ru[voiced_ru] - med_ru, -0.45, 0.48)
+            interp_ru = np.interp(t_ru, t_ru[voiced_ru], dev_ru_voiced)
+            k_ru = np.ones(15) / 15.0  # 150ms sentence-level macro contour
+            macro_ru = np.convolve(interp_ru, k_ru, mode="same")
+            micro_ru = interp_ru - macro_ru
+
+            if np.sum(voiced_en) >= 6:
+                en_f0_clean = F0_en_np.copy()
+                if is_male:
+                    while np.any(en_f0_clean > 240.0):
+                        en_f0_clean[en_f0_clean > 240.0] *= 0.5
+                log_f0_en = np.log(np.maximum(en_f0_clean, 1e-5))
                 med_en = float(np.median(log_f0_en[voiced_en]))
-                std_en = float(np.std(log_f0_en[voiced_en])) + 1e-4
-                dyn_ratio = float(np.clip((std_en / std_ru) * 0.75 + emotion_scale * 0.65, 1.60, 2.15))
 
                 t_en = np.arange(len(log_f0_en))
-                dev_en_voiced = np.clip((log_f0_en[voiced_en] - med_en) * 1.35, -0.45, 0.48)
+                en_idx = np.where(voiced_en)[0]
+                v_en_0, v_en_1 = int(en_idx[0]), int(en_idx[-1])
+
+                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.45, 0.48)
                 interp_en = np.interp(t_en, t_en[voiced_en], dev_en_voiced)
-                kernel = np.ones(5) / 5.0
-                macro_en = np.convolve(interp_en, kernel, mode="same")
-                macro_en = macro_en - float(np.median(macro_en))
-                macro_resampled = np.interp(
-                    np.linspace(0, len(macro_en) - 1, len(log_f0_ru)),
-                    np.arange(len(macro_en)),
-                    macro_en,
-                )
-                shifted_log = (
-                    target_med
-                    + (1.0 - contour_blend) * (dev_ru * dyn_ratio)
-                    + contour_blend * (dev_ru * 1.25 + macro_resampled)
-                )
+                k_en = np.ones(7) / 7.0  # 70ms English emotional intonation contour
+                macro_en = np.convolve(interp_en, k_en, mode="same")
+                macro_en_span = macro_en[v_en_0 : v_en_1 + 1]
+                if len(macro_en_span) >= 4 and (v_ru_1 > v_ru_0):
+                    macro_en_span = macro_en_span - float(np.median(macro_en_span))
+                    macro_en_aligned = np.zeros_like(log_f0_ru)
+                    ru_span_len = v_ru_1 - v_ru_0 + 1
+                    macro_en_aligned[v_ru_0 : v_ru_1 + 1] = np.interp(
+                        np.linspace(0, len(macro_en_span) - 1, ru_span_len),
+                        np.arange(len(macro_en_span)),
+                        macro_en_span,
+                    )
+                    # 80% English sentence intonation arch + 20% expanded Russian arch + 100% Russian syllable micro-prosody
+                    shifted_log = (
+                        target_med
+                        + 1.30 * macro_en_aligned
+                        + 0.25 * macro_ru
+                        + 1.10 * micro_ru
+                    )
+                else:
+                    shifted_log = target_med + interp_ru * 1.65
             else:
-                shifted_log = target_med + dev_ru * dyn_ratio
+                shifted_log = target_med + interp_ru * 1.65
 
             # Allow wide, dramatic human emotional inflection [-8, +9.5] semitones while capping male ceiling at 245 Hz
             max_ceil_log = np.log(245.0) if is_male else np.log(440.0)
