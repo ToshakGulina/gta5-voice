@@ -1,0 +1,186 @@
+﻿=== STEP 2: AWC UNPACK/REPACK & INSTALLER STRUCTURE TEST ===
+Timestamp: 2026-10-25 12:20:04
+
+Using Python: C:\Users\anton\AppData\Local\Python\bin\python.exe
+Dotnet SDKs: 8.0.426 [C:\Program Files\dotnet\sdk]
+Dotnet Runtimes: Microsoft.AspNetCore.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]; Microsoft.NETCore.App 6.0.11 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]; Microsoft.NETCore.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]; Microsoft.WindowsDesktop.App 6.0.11 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]; Microsoft.WindowsDesktop.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+
+=== 1. FOLDER BREAKDOWN IN NeuroDub_GTAV_FREE_dub_story ===
+Folder: \x64d.rpf -> 2 files (36,35 MB). Examples: x64d.rpf~movies~lester1b_1.bik (34731,9 KB), x64d.rpf~movies~lester1b_2.bik (2491,6 KB)
+Folder: \x64\audio\sfx\CUTSCENE_MASTERED_ONLY.rpf -> 361 files (594,9 MB). Examples: abigail_mcs_1_seq_mastered_only.awc (854,3 KB), abigail_mcs_2_mastered_only.awc (2451,5 KB), ac_ig_3_p3_b_mastered_only.awc (1622,5 KB), ah_1_ext_t6_mastered_only.awc (2328,3 KB), ah_1_int_seq_mastered_only.awc (4279,8 KB)
+Folder: \x64\audio\sfx\PROLOGUE.rpf -> 6 files (6,75 MB). Examples: pro_ig_1_sync_mastered_only.awc (251,7 KB), pro_mcs_1_mastered_only.awc (117 KB), pro_mcs_2_mastered_only.awc (456,4 KB), pro_mcs_3_pt1_mastered_only.awc (520,3 KB), pro_mcs_5_seq_mastered_only.awc (2368,4 KB)
+Folder: \x64\audio\sfx\SCRIPT.rpf -> 2 files (1,35 MB). Examples: drug_traffic_air_panic.awc (762,1 KB), panic_walla_interior.awc (620,1 KB)
+Folder: \x64\audio\sfx\SS_AC.rpf -> 47 files (279,7 MB). Examples: acult.awc (2533,2 KB), afl.awc (88,3 KB), ah3b.awc (23971,1 KB), ahf.awc (2696 KB), amsol.awc (187,5 KB)
+Folder: \x64\audio\sfx\SS_DE.rpf -> 24 files (94,85 MB). Examples: dh1.awc (13073,5 KB), dh2a.awc (11886,4 KB), dh2b.awc (11016,5 KB), dhf.awc (2890,6 KB), dhp1.awc (1740,3 KB)
+Folder: \x64\audio\sfx\SS_FF.rpf -> 83 files (489,07 MB). Examples: fafj.awc (3883 KB), fafl.awc (1497,4 KB), fafm.awc (4303,8 KB), faft.awc (4744,9 KB), fam1.awc (17055,4 KB)
+Folder: \x64\audio\sfx\SS_GM.rpf -> 41 files (208,51 MB). Examples: gunsh.awc (8676,7 KB), haird.awc (352,8 KB), hao1.awc (684 KB), heat.awc (7435,8 KB), htamb.awc (879,6 KB)
+Folder: \x64\audio\sfx\SS_NP.rpf -> 45 files (135,73 MB). Examples: nhh.awc (1396,2 KB), nhh2a.awc (1015,9 KB), nhs1b.awc (2098,7 KB), nig1a.awc (4325,6 KB), nig1b.awc (4186,7 KB)
+Folder: \x64\audio\sfx\SS_QR.rpf -> 50 files (123,74 MB). Examples: ramp1.awc (308 KB), ramp2.awc (1721,7 KB), ramp3.awc (246,6 KB), ramp4.awc (287,1 KB), ramp5.awc (312,1 KB)
+Folder: \x64\audio\sfx\SS_ST.rpf -> 32 files (162,83 MB). Examples: sas1.awc (2005,8 KB), sclub.awc (12753,1 KB), scrap.awc (1222,8 KB), sh.awc (352,6 KB), shome.awc (681,2 KB)
+Folder: \x64\audio\sfx\SS_UZ.rpf -> 1 files (4,77 MB). Examples: weed.awc (4880,7 KB)
+Folder: \x64\audio\sfx\STREAMS.rpf -> 14 files (49,5 MB). Examples: ambient_protesters.awc (1024,1 KB), chinese2_farmhouse_intro.awc (1024,1 KB), fam5_flying.awc (9728,2 KB), family_5_son_games.awc (2048,1 KB), fbi_2_mcs_3_p1b.awc (6144,2 KB)
+Folder: \x64\audio\sfx\S_MISC.rpf -> 17 files (132,26 MB). Examples: franklin_1_normal.awc (10085,4 KB), franklin_2_normal.awc (12704,9 KB), franklin_3_normal.awc (10701,1 KB), franklin_angry.awc (5257 KB), franklin_drunk.awc (4668,1 KB)
+
+=== 2. SCANNING NeuroDub_GTAV_FREE_dub.exe FOR EMBEDDED TOOLS ===
+ASCII filenames in Setup.exe: kernel32.dll, comctl32.dll, user32.dll, oleaut32.dll, advapi32.dll, mpr.dll, netapi32.dll, netutils.dll, textshaping.dll, version.dll, winhttp.dll
+UTF16 filenames in Setup.exe: kernel32.dll, ntdll.dll, oleaut32.dll, advapi32.dll, bcrypt.dll
+
+=== 3. TESTING gta5_awc_tool.py ON REAL NERUAL AWC FILES ===
+--- Testing file: D:\Users\anton\Downloads\NeuroDub_GTAV_FREE_dub\NeuroDub_GTAV_FREE_dub_story\x64\audio\sfx\PROLOGUE.rpf\pro_mcs_1_mastered_only.awc (119856 bytes) ---
+{
+  "version": 1,
+  "flags": "0xFF04",
+  "multi_channel": true,
+  "single_channel_encrypted": false,
+  "multi_channel_encrypted": false,
+  "stream_count": 2,
+  "streams": [
+    {
+      "id_hex": "0x00000000",
+      "chunks": [
+        "streamformat",
+        "data",
+        "seektable"
+      ]
+    },
+    {
+      "id_hex": "0x00E9E7B7",
+      "chunks": [],
+      "channel_index": 0,
+      "samples": 788305,
+      "sample_rate": 48000,
+      "duration_sec": 16.423,
+      "codec": 7,
+      "headroom": -191
+    }
+  ],
+  "mc_block_count": 1,
+  "mc_block_size": 524288,
+  "mc_channel_count": 1
+}
+Unpack result: Traceback (most recent call last):;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1004, in <module>;     main();     ~~~~^^;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 991, in main;     manifest = awc.unpack_to_dir(Path(sys.argv[3]));   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 524, in unpack_to_dir;     raise ValueError(f"═хяюффхЁцштрхь√щ ъюфхъ {codec} т ърэрых 0x{cid:08X}"); ValueError: ═хяюффхЁцштрхь√щ ъюфхъ 7 т ърэрых 0x00E9E7B7
+Repack result: ╙яръютрэ эют√щ AWC (524368 срщЄ) -> D:\gta5-voice\samples\pro_mcs_1_mastered_only_repacked.awc
+--- Testing file: D:\Users\anton\Downloads\NeuroDub_GTAV_FREE_dub\NeuroDub_GTAV_FREE_dub_story\x64\audio\sfx\CUTSCENE_MASTERED_ONLY.rpf\ah_1_mcs_1_mastered_only.awc (299136 bytes) ---
+{
+  "version": 1,
+  "flags": "0xFF04",
+  "multi_channel": true,
+  "single_channel_encrypted": false,
+  "multi_channel_encrypted": false,
+  "stream_count": 2,
+  "streams": [
+    {
+      "id_hex": "0x00000000",
+      "chunks": [
+        "streamformat",
+        "data",
+        "seektable"
+      ]
+    },
+    {
+      "id_hex": "0x182B26EC",
+      "chunks": [],
+      "channel_index": 0,
+      "samples": 1661905,
+      "sample_rate": 48000,
+      "duration_sec": 34.623,
+      "codec": 7,
+      "headroom": -191
+    }
+  ],
+  "mc_block_count": 1,
+  "mc_block_size": 524288,
+  "mc_channel_count": 1
+}
+Unpack result: Traceback (most recent call last):;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1004, in <module>;     main();     ~~~~^^;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 991, in main;     manifest = awc.unpack_to_dir(Path(sys.argv[3]));   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 524, in unpack_to_dir;     raise ValueError(f"═хяюффхЁцштрхь√щ ъюфхъ {codec} т ърэрых 0x{cid:08X}"); ValueError: ═хяюффхЁцштрхь√щ ъюфхъ 7 т ърэрых 0x182B26EC
+Repack result: ╙яръютрэ эют√щ AWC (524368 срщЄ) -> D:\gta5-voice\samples\ah_1_mcs_1_mastered_only_repacked.awc
+--- Testing file: D:\Users\anton\Downloads\NeuroDub_GTAV_FREE_dub\NeuroDub_GTAV_FREE_dub_story\x64\audio\sfx\SS_DE.rpf\engph.awc (124980 bytes) ---
+{
+  "version": 1,
+  "flags": "0xFF02",
+  "multi_channel": false,
+  "single_channel_encrypted": true,
+  "multi_channel_encrypted": false,
+  "stream_count": 5,
+  "streams": [
+    {
+      "id_hex": "0x0769AE27",
+      "chunks": [
+        "data",
+        "format",
+        "seektable",
+        "animation",
+        "peak"
+      ],
+      "samples": 85585,
+      "sample_rate": 32000,
+      "duration_sec": 2.675,
+      "codec": 7,
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x0B157587",
+      "chunks": [
+        "data",
+        "format",
+        "seektable",
+        "animation",
+        "peak"
+      ],
+      "samples": 93265,
+      "sample_rate": 32000,
+      "duration_sec": 2.915,
+      "codec": 7,
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x1227C3A3",
+      "chunks": [
+        "data",
+        "format",
+        "seektable",
+        "animation",
+        "peak"
+      ],
+      "samples": 80465,
+      "sample_rate": 32000,
+      "duration_sec": 2.515,
+      "codec": 7,
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x18D6D10A",
+      "chunks": [
+        "data",
+        "format",
+        "seektable",
+        "animation",
+        "peak"
+      ],
+      "samples": 100945,
+      "sample_rate": 32000,
+      "duration_sec": 3.155,
+      "codec": 7,
+      "headroom": 110
+    },
+    {
+      "id_hex": "0x1CBD98CE",
+      "chunks": [
+        "data",
+        "format",
+        "seektable",
+        "animation",
+        "peak"
+      ],
+      "samples": 45905,
+      "sample_rate": 32000,
+      "duration_sec": 1.435,
+      "codec": 7,
+      "headroom": 110
+    }
+  ]
+}
+Unpack result: Traceback (most recent call last):;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 1004, in <module>;     main();     ~~~~^^;   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 991, in main;     manifest = awc.unpack_to_dir(Path(sys.argv[3]));   File "D:\gta5-voice\tools\gta5_awc_tool.py", line 472, in unpack_to_dir;     raise ValueError(f"═хяюффхЁцштрхь√щ ъюфхъ {codec} т яюЄюъх 0x{s.stream_id:08X}"); ValueError: ═хяюффхЁцштрхь√щ ъюфхъ 7 т яюЄюъх 0x0769AE27
+Repack result: ╙яръютрэ эют√щ AWC (125012 срщЄ) -> D:\gta5-voice\samples\engph_repacked.awc
+
+=== END OF STEP 2 REPORT ===
