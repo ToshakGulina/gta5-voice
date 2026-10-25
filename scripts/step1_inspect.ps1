@@ -3,9 +3,11 @@ param(
     [string]$GameDir   = "D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV"
 )
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Continue"
-$RepoRoot = Split-Path -Parent $PSScriptRoot
-$ReportDir = Join-Path $RepoRoot "reports"
+
+$WorkRoot = "D:\gta5-voice"
+$ReportDir = Join-Path $WorkRoot "reports"
 New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
 
 $TxtReport = Join-Path $ReportDir "step1_report.txt"
@@ -14,6 +16,42 @@ $Lines = New-Object System.Collections.Generic.List[string]
 function Add-Line([string]$s) {
     Write-Host $s
     $Lines.Add($s)
+}
+
+function Send-ToGitHub([string]$LocalFile, [string]$RepoPath) {
+    $TokenFile = Join-Path $WorkRoot ".token"
+    if (!(Test-Path $TokenFile)) {
+        Write-Host "ERROR: Token file not found at $TokenFile" -ForegroundColor Red
+        return
+    }
+    $Token = (Get-Content -LiteralPath $TokenFile -Raw).Trim()
+    $Uri = "https://api.github.com/repos/ToshakGulina/gta5-voice/contents/$RepoPath"
+    $Headers = @{
+        "Authorization" = "Bearer $Token"
+        "Accept"        = "application/vnd.github+json"
+        "User-Agent"    = "GTA5-Voice-Inspector"
+    }
+
+    $Sha = $null
+    try {
+        $Existing = Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -ErrorAction Stop
+        $Sha = $Existing.sha
+    } catch {
+        # File does not exist yet, which is fine
+    }
+
+    $Bytes = [System.IO.File]::ReadAllBytes($LocalFile)
+    $B64 = [Convert]::ToBase64String($Bytes)
+    $BodyHash = @{
+        message = "Upload $RepoPath from PC"
+        content = $B64
+    }
+    if ($Sha) {
+        $BodyHash["sha"] = $Sha
+    }
+    $JsonBody = $BodyHash | ConvertTo-Json -Depth 4
+    $Resp = Invoke-RestMethod -Method Put -Uri $Uri -Headers $Headers -Body $JsonBody -ContentType "application/json; charset=utf-8" -ErrorAction Stop
+    Write-Host "SUCCESS: Uploaded $RepoPath to GitHub!" -ForegroundColor Green
 }
 
 Add-Line "=== GTA 5 VOICE UPGRADE: STEP 1 INSPECTION ==="
@@ -48,11 +86,11 @@ foreach ($tool in @("git", "python", "py", "dotnet", "ffmpeg", "7z", "innounp"))
     }
 }
 
-# Also check standard 7-Zip / InnoSetup locations
 foreach ($p in @(
     "C:\Program Files\7-Zip\7z.exe",
     "C:\Program Files (x86)\7-Zip\7z.exe",
-    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    "C:\Program Files\Git\cmd\git.exe"
 )) {
     if (Test-Path $p) {
         Add-Line ("Extra path FOUND: " + $p)
@@ -63,8 +101,8 @@ Add-Line ""
 # 3. Inspect Nerual Dreming Folder
 Add-Line "=== 3. NERUAL DREMING ARCHIVE FOLDER ==="
 Add-Line ("Target Path: " + $NerualDir)
-if (Test-Path $NerualDir) {
-    $nFiles = Get-ChildItem -LiteralPath $NerualDir -Recurse -Force -ErrorAction SilentlyContinue
+if (Test-Path -LiteralPath $NerualDir) {
+    $nFiles = @(Get-ChildItem -LiteralPath $NerualDir -Recurse -Force -ErrorAction SilentlyContinue)
     Add-Line ("Total items found: " + $nFiles.Count)
     foreach ($f in ($nFiles | Select-Object -First 200)) {
         if ($f.PSIsContainer) {
@@ -76,7 +114,6 @@ if (Test-Path $NerualDir) {
                 try {
                     $ver = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($f.FullName)
                     Add-Line ("       ExeInfo: Product='{0}', Desc='{1}', Version='{2}'" -f $ver.ProductName, $ver.FileDescription, $ver.FileVersion)
-                    # Check if Inno Setup signature exists in first 4MB
                     $fs = [System.IO.File]::OpenRead($f.FullName)
                     $bufLen = [Math]::Min($fs.Length, 4194304)
                     $buf = New-Object byte[] $bufLen
@@ -98,9 +135,9 @@ if (Test-Path $NerualDir) {
 } else {
     Add-Line "ERROR: NerualDir path does NOT exist! Checking parent folder..."
     $parent = Split-Path -Parent $NerualDir
-    if (Test-Path $parent) {
+    if (Test-Path -LiteralPath $parent) {
         Get-ChildItem -LiteralPath $parent | Where-Object { $_.Name -match "Neuro|Nerual|GTA|dub|vo" } | ForEach-Object {
-            Add-Line ("Candidate in Downloads: {0} ({1})" -f $_.FullName, $_.Length)
+            Add-Line ("Candidate in Downloads: {0} ({1} bytes)" -f $_.FullName, $_.Length)
         }
     }
 }
@@ -109,9 +146,9 @@ Add-Line ""
 # 4. Inspect GTA V Legacy Folder
 Add-Line "=== 4. GTA V LEGACY GAME FOLDER ==="
 Add-Line ("Target Path: " + $GameDir)
-if (Test-Path $GameDir) {
+if (Test-Path -LiteralPath $GameDir) {
     $gtaExe = Join-Path $GameDir "GTA5.exe"
-    if (Test-Path $gtaExe) {
+    if (Test-Path -LiteralPath $gtaExe) {
         $ver = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($gtaExe)
         Add-Line ("GTA5.exe Version: " + $ver.FileVersion + " / ProductVersion: " + $ver.ProductVersion)
     } else {
@@ -119,13 +156,13 @@ if (Test-Path $GameDir) {
     }
 
     $modsDir = Join-Path $GameDir "mods"
-    Add-Line ("mods folder exists: " + (Test-Path $modsDir))
-    Add-Line ("OpenIV.asi exists:  " + (Test-Path (Join-Path $GameDir "OpenIV.asi")))
-    Add-Line ("dinput8.dll exists: " + (Test-Path (Join-Path $GameDir "dinput8.dll")))
+    Add-Line ("mods folder exists: " + (Test-Path -LiteralPath $modsDir))
+    Add-Line ("OpenIV.asi exists:  " + (Test-Path -LiteralPath (Join-Path $GameDir "OpenIV.asi")))
+    Add-Line ("dinput8.dll exists: " + (Test-Path -LiteralPath (Join-Path $GameDir "dinput8.dll")))
 
     $sfxDir = Join-Path $GameDir "x64\audio\sfx"
-    if (Test-Path $sfxDir) {
-        $rpfFiles = Get-ChildItem -LiteralPath $sfxDir -Filter "*.rpf"
+    if (Test-Path -LiteralPath $sfxDir) {
+        $rpfFiles = @(Get-ChildItem -LiteralPath $sfxDir -Filter "*.rpf")
         Add-Line ("Audio SFX RPF count in x64\audio\sfx: " + $rpfFiles.Count)
         foreach ($rpf in $rpfFiles) {
             $mb = [math]::Round($rpf.Length / 1MB, 2)
@@ -143,16 +180,6 @@ Add-Line "=== END OF STEP 1 REPORT ==="
 
 [System.IO.File]::WriteAllLines($TxtReport, $Lines, [System.Text.Encoding]::UTF8)
 Write-Host ""
-Write-Host "Report saved to: $TxtReport"
+Write-Host "Report saved locally to: $TxtReport"
 
-# Commit and push automatically if inside git repo
-Push-Location $RepoRoot
-try {
-    git add reports/step1_report.txt
-    git commit -m "Add Step 1 inspection report"
-    git push
-    Write-Host "Successfully pushed report to GitHub!"
-} catch {
-    Write-Host ("Git push note: " + $_.Exception.Message)
-}
-Pop-Location
+Send-ToGitHub -LocalFile $TxtReport -RepoPath "reports/step1_report.txt"
