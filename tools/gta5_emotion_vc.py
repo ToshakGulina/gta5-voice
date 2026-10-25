@@ -21,6 +21,7 @@ os.environ["TQDM_DISABLE"] = "1"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
 import numpy as np
+from scipy.signal import medfilt
 import soundfile as sf
 import torch
 import torchaudio
@@ -433,17 +434,21 @@ class GTA5EmotionVC:
         ac_en_f0s = estimate_f0_autocorr(en_ref_44k, self.sr)
         ac_en_med = float(np.median(ac_en_f0s)) if len(ac_en_f0s) > 0 else ac_ru_med
 
-        # Only fold true harmonic octave errors relative to each speaker's own autocorrelation F0
+        # Fold octave errors on Russian TTS relative to its own autocorrelation median
         v_ru = F0_ru_np > 1.0
         if np.any(v_ru):
             while np.any(F0_ru_np > ac_ru_med * 1.80):
                 F0_ru_np[F0_ru_np > ac_ru_med * 1.80] *= 0.5
 
-        v_en = F0_en_np > 1.0
-        if np.any(v_en):
-            en_ceil = max(ac_en_med * 1.85, 420.0)
-            while np.any(F0_en_np > en_ceil):
-                F0_en_np[F0_en_np > en_ceil] *= 0.5
+        # Clean English F0 contour without folding peaks across 240/420 Hz:
+        # remove sub-harmonic creak glitches (<0.48 * med) and apply 5-frame median filter
+        v_en_raw = F0_en_np > 1.0
+        if np.sum(v_en_raw) >= 6:
+            en_raw_med = float(np.median(F0_en_np[v_en_raw]))
+            F0_en_np[F0_en_np < 0.48 * en_raw_med] = 0.0
+            v_en_valid = F0_en_np > 1.0
+            if np.sum(v_en_valid) >= 5:
+                F0_en_np[v_en_valid] = medfilt(F0_en_np[v_en_valid], kernel_size=5)
 
         voiced_ru = F0_ru_np > 1.0
         voiced_en = F0_en_np > 1.0
@@ -459,13 +464,18 @@ class GTA5EmotionVC:
             if np.sum(voiced_en) >= 6:
                 log_f0_en_all = np.log(np.maximum(F0_en_np, 1e-5))
                 med_en = float(np.median(log_f0_en_all[voiced_en]))
-                semi_diff = float(np.clip((med_en - med_ru) * (12.0 / np.log(2.0)) * 0.55, -2.5, 3.5))
+                semi_diff = float(np.clip((med_en - med_ru) * (12.0 / np.log(2.0)) * 0.55, -2.5, 4.2))
             else:
                 semi_diff = float(np.clip((en_rms / ru_rms - 0.85) * 2.0, 0.0, 2.5))
 
             target_med = med_ru + semi_diff * (np.log(2.0) / 12.0)
             if is_male:
-                target_med = min(target_med, np.log(170.0))
+                target_med = min(target_med, np.log(178.0))
+
+            # Dynamic ceiling allows high emotional shouts (like 0x1227C3A3's 444Hz opening)
+            en_peak_hz = float(np.percentile(F0_en_np[voiced_en], 95)) if np.any(voiced_en) else 240.0
+            male_ceil_hz = max(265.0, min(350.0, en_peak_hz * 0.82))
+            max_ceil_hz = male_ceil_hz if is_male else 460.0
 
             # Normalize the two halves of the hybrid prompt [ru_anchor, en_anchor] separately
             ru_p_frames = int(round(len(ru_anchor) / float(self.sr) * 100.0))
@@ -477,7 +487,7 @@ class GTA5EmotionVC:
                     sub[v_sub] = np.clip(
                         sub[v_sub] * np.exp(target_med - m_sub),
                         65.0,
-                        265.0 if is_male else 440.0,
+                        max_ceil_hz,
                     )
 
             # 50ms (5-frame) Macro/Micro Pitch Decomposition:
@@ -501,7 +511,7 @@ class GTA5EmotionVC:
                 en_idx = np.where(voiced_en)[0]
                 v_en_0, v_en_1 = int(en_idx[0]), int(en_idx[-1])
 
-                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.52, 0.55)
+                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.65, 0.72)
                 interp_en = np.interp(t_en, t_en[voiced_en], dev_en_voiced)
                 macro_en = np.convolve(interp_en, k5, mode="same")
                 macro_en_span = macro_en[v_en_0 : v_en_1 + 1]
@@ -514,16 +524,14 @@ class GTA5EmotionVC:
                         np.arange(len(macro_en_span)),
                         macro_en_span,
                     )
-                    # 100% of word/sentence intonation comes from English (macro_en_aligned)
-                    # plus fast (<50ms) Russian phoneme articulation (micro_ru)
-                    shifted_log = target_med + 1.25 * macro_en_aligned + 0.35 * micro_ru
+                    shifted_log = target_med + 1.15 * macro_en_aligned + 0.25 * micro_ru
                 else:
                     shifted_log = target_med + interp_ru * 1.60
             else:
                 shifted_log = target_med + interp_ru * 1.60
 
-            max_ceil_log = np.log(265.0) if is_male else np.log(450.0)
-            shifted_log = np.clip(shifted_log, target_med - 0.48, min(target_med + 0.55, max_ceil_log))
+            max_ceil_log = np.log(max_ceil_hz)
+            shifted_log = np.clip(shifted_log, target_med - 0.58, min(target_med + 0.72, max_ceil_log))
             F0_shifted_np = np.where(voiced_ru, np.exp(shifted_log), 0.0).astype(np.float32)
             out_med_hz = float(np.median(F0_shifted_np[voiced_ru]))
             out_iqr_semi = float(
