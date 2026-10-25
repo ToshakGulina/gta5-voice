@@ -19,26 +19,20 @@ $RpfDir     = Join-Path $ToolsDir "RpfTool"
 $ReportDir  = Join-Path $WorkRoot "reports"
 $SampleDir  = Join-Path $WorkRoot "samples"
 $EngDir     = Join-Path $SampleDir "english"
-$RpfTestDir = Join-Path $SampleDir "rpf_test"
 $EnhDir     = Join-Path $SampleDir "enhanced_ru"
 $VenvDir    = Join-Path $WorkRoot ".venv"
 $PipCache   = Join-Path $WorkRoot "pip_cache"
 $SeedVcDir  = Join-Path $ToolsDir "seed_vc_core"
 
-New-Item -ItemType Directory -Force -Path $RpfTestDir, $EnhDir, $PipCache, $SeedVcDir | Out-Null
+New-Item -ItemType Directory -Force -Path $EnhDir, $PipCache, $SeedVcDir | Out-Null
 $env:PIP_CACHE_DIR = $PipCache
 $env:HF_HOME       = Join-Path $WorkRoot "checkpoints"
 $env:TORCH_HOME    = Join-Path $WorkRoot "checkpoints"
 $env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
 
 # Download updated files from GitHub
-Stop-Process -Name "RpfTool" -Force -ErrorAction SilentlyContinue
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/gta5_awc_tool.py" -UseBasicParsing -OutFile (Join-Path $ToolsDir "gta5_awc_tool.py")
-Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/RpfTool/Program.cs" -UseBasicParsing -OutFile (Join-Path $RpfDir "Program.cs")
-Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/seed_vc_core.zip" -UseBasicParsing -OutFile (Join-Path $ToolsDir "seed_vc_core.zip")
 Invoke-WebRequest "https://raw.githubusercontent.com/ToshakGulina/gta5-voice/main/tools/gta5_emotion_vc.py" -UseBasicParsing -OutFile (Join-Path $ToolsDir "gta5_emotion_vc.py")
-
-Expand-Archive -LiteralPath (Join-Path $ToolsDir "seed_vc_core.zip") -DestinationPath $SeedVcDir -Force
 
 $TxtReport = Join-Path $ReportDir "step6_report.txt"
 $Lines = New-Object System.Collections.Generic.List[string]
@@ -72,61 +66,58 @@ function Send-ToGitHub([string]$LocalFile, [string]$RepoPath) {
     Write-Host "SUCCESS: Uploaded $RepoPath to GitHub!" -ForegroundColor Green
 }
 
-Add-Line "=== STEP 6 (FIXED): NATIVE RPF NG INJECTION + RTX 5070 Ti EMOTION VC TEST ==="
+Add-Line "=== STEP 6 (HIGH-EXPRESSIVENESS BATCH): RTX 5070 Ti EMOTION VC TEST ==="
 Add-Line ("Timestamp: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss"))
 Add-Line ""
 
-# 1. Rebuild RpfTool and test RPF NG injection with "."
-Push-Location $RpfDir
-$bOut = & dotnet build -c Release --nologo -v q 2>&1
-Add-Line ("RpfTool build: " + ($bOut -join "; "))
-Pop-Location
-$RpfExe = Join-Path $RpfDir "bin\Release\net8.0\RpfTool.exe"
-
-Add-Line "=== 1. TESTING RPF NG INJECTION WITH '.' ROOT ARGUMENT ==="
-$OrigPrologueRpf = Join-Path $GameDir "x64\audio\sfx\PROLOGUE.rpf"
-$TestPrologueRpf = Join-Path $RpfTestDir "PROLOGUE.rpf"
-Copy-Item -LiteralPath $OrigPrologueRpf -Destination $TestPrologueRpf -Force
-
-$RepackedProAwc = Join-Path $SampleDir "repacked_awc\pro_mcs_1_mastered_only.awc"
-$injOut = & $RpfExe inject $GameDir $TestPrologueRpf "." $RepackedProAwc 2>&1
-Add-Line ("RPF Inject output:`n" + ($injOut -join "`n"))
-Remove-Item -LiteralPath $TestPrologueRpf -Force -ErrorAction SilentlyContinue
-Add-Line ""
-
-# 2. Check Venv (already installed on previous run!)
-Add-Line "=== 2. CHECKING PYTORCH CU128 VENV ON D:\gta5-voice\.venv ==="
 $VenvPy = Join-Path $VenvDir "Scripts\python.exe"
-$gpuTest = & $VenvPy -c "import torch; print('Torch:', torch.__version__, 'CUDA:', torch.cuda.is_available(), 'Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')" 2>&1
-Add-Line ("GPU Check: " + ($gpuTest -join "; "))
-Add-Line ""
-
-# 3. Re-unpack Russian AWC with Xing VBR headers & Run Emotion VC on 2 sample files!
-Add-Line "=== 3. RE-UNPACKING VBR MP3s (WITH XING HEADER) & RUNNING EMOTION VC ==="
 $AwcTool = Join-Path $ToolsDir "gta5_awc_tool.py"
 $VcScript = Join-Path $ToolsDir "gta5_emotion_vc.py"
 
+# Unpack all 3 Russian sample AWCs with Xing VBR headers
 & $VenvPy $AwcTool unpack (Join-Path $SampleDir "engph.awc") (Join-Path $SampleDir "ru_engph_unpacked") | Out-Null
 & $VenvPy $AwcTool unpack (Join-Path $SampleDir "pro_mcs_1_mastered_only.awc") (Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked") | Out-Null
+& $VenvPy $AwcTool unpack (Join-Path $SampleDir "ah_1_mcs_1_mastered_only.awc") (Join-Path $SampleDir "ru_ah_1_mcs_1_mastered_only_unpacked") | Out-Null
 
-$RuEngph = Join-Path $SampleDir "ru_engph_unpacked\0x0769AE27.mp3"
-$EnEngph = Join-Path $EngDir "engph_unpacked\0x0769AE27.wav"
-$OutEngph = Join-Path $EnhDir "engph_0x0769AE27.wav"
+$BatchJsonPath = Join-Path $SampleDir "vc_batch.json"
+$BatchItems = @(
+    @{
+        ru  = (Join-Path $SampleDir "ru_engph_unpacked\0x1227C3A3.mp3")
+        en  = (Join-Path $EngDir "engph_unpacked\0x1227C3A3.wav")
+        out = (Join-Path $EnhDir "engph_0x1227C3A3.wav")
+    },
+    @{
+        ru  = (Join-Path $SampleDir "ru_engph_unpacked\0x0769AE27.mp3")
+        en  = (Join-Path $EngDir "engph_unpacked\0x0769AE27.wav")
+        out = (Join-Path $EnhDir "engph_0x0769AE27.wav")
+    },
+    @{
+        ru  = (Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked\0x00E9E7B7.mp3")
+        en  = (Join-Path $EngDir "pro_mcs_1_mastered_only_unpacked\0x00E9E7B7.wav")
+        out = (Join-Path $EnhDir "pro_mcs_1_0x00E9E7B7.wav")
+    },
+    @{
+        ru  = (Join-Path $SampleDir "ru_ah_1_mcs_1_mastered_only_unpacked\0x182B26EC.mp3")
+        en  = (Join-Path $EngDir "ah_1_mcs_1_mastered_only_unpacked\0x182B26EC.wav")
+        out = (Join-Path $EnhDir "ah_1_mcs_1_0x182B26EC.wav")
+    }
+)
+$BatchJson = $BatchItems | ConvertTo-Json -Depth 4
+[System.IO.File]::WriteAllText($BatchJsonPath, $BatchJson, [System.Text.Encoding]::UTF8)
 
-Write-Host "Converting sample 1/2: engph (0x0769AE27)..." -ForegroundColor Cyan
-$vcOut1 = & $VenvPy $VcScript --seed-vc-dir $SeedVcDir --ru $RuEngph --en $EnEngph --out $OutEngph 2>&1
-Add-Line ("VC Sample 1 (engph):`n" + ($vcOut1 -join "`n"))
+Write-Host "Running single-load GPU batch on 4 sample files (engph x2, pro_mcs_1, ah_1_mcs_1 35s cutscene)..." -ForegroundColor Cyan
+$vcOut = & $VenvPy $VcScript --seed-vc-dir $SeedVcDir --batch-json $BatchJsonPath 2>&1
+Add-Line ("VC Batch Output:`n" + ($vcOut -join "`n"))
 
-$RuPro = Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked\0x00E9E7B7.mp3"
-$EnPro = Join-Path $EngDir "pro_mcs_1_mastered_only_unpacked\0x00E9E7B7.wav"
-$OutPro = Join-Path $EnhDir "pro_mcs_1_0x00E9E7B7.wav"
+$Out1 = Join-Path $EnhDir "engph_0x1227C3A3.wav"
+$Out2 = Join-Path $EnhDir "engph_0x0769AE27.wav"
+$Out3 = Join-Path $EnhDir "pro_mcs_1_0x00E9E7B7.wav"
+$Out4 = Join-Path $EnhDir "ah_1_mcs_1_0x182B26EC.wav"
 
-Write-Host "Converting sample 2/2: pro_mcs_1_mastered_only (0x00E9E7B7)..." -ForegroundColor Cyan
-$vcOut2 = & $VenvPy $VcScript --seed-vc-dir $SeedVcDir --ru $RuPro --en $EnPro --out $OutPro 2>&1
-Add-Line ("VC Sample 2 (pro_mcs_1):`n" + ($vcOut2 -join "`n"))
-
-if (Test-Path $OutEngph) { Send-ToGitHub -LocalFile $OutEngph -RepoPath "samples/enhanced_0x0769AE27.wav" }
-if (Test-Path $OutPro)   { Send-ToGitHub -LocalFile $OutPro   -RepoPath "samples/enhanced_pro_mcs_1.wav" }
+if (Test-Path $Out1) { Send-ToGitHub -LocalFile $Out1 -RepoPath "samples/enhanced_0x1227C3A3.wav" }
+if (Test-Path $Out2) { Send-ToGitHub -LocalFile $Out2 -RepoPath "samples/enhanced_0x0769AE27.wav" }
+if (Test-Path $Out3) { Send-ToGitHub -LocalFile $Out3 -RepoPath "samples/enhanced_pro_mcs_1.wav" }
+if (Test-Path $Out4) { Send-ToGitHub -LocalFile $Out4 -RepoPath "samples/enhanced_ah_1_mcs_1.wav" }
 
 Add-Line ""
 Add-Line "=== END OF STEP 6 REPORT ==="

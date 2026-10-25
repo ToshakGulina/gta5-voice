@@ -6,18 +6,19 @@ GTA 5 Emotion & Timbre Transfer Engine (Seed-VC 44.1kHz F0-Conditioned)
 Enhances flat Russian neural dubbing (Nerual Dreming v3.0) using the original
 Rockstar English audio tracks from GTA V Legacy:
   1. Automatic Xing VBR header injection in memory so raw .awc MP3 streams are
-     NEVER truncated by libsndfile/soundfile (fixes 'Хватит болтать, чёрт побери').
+     NEVER truncated by libsndfile/soundfile.
   2. High-resolution (10ms hop, 110ms plosive bridge) speaker-turn segmentation
      with autocorrelation F0 voice verification so different speakers in cutscenes
      are never merged together and background SFX/screams remain untouched.
-  3. Octave-protected F0 emotion transfer: anchors each speaker's natural vocal
-     register (110-165 Hz for male characters, 210-280 Hz for female characters)
-     while transferring the dynamic pitch inflection arch and syllabic stress
-     from the English performance.
+  3. Strong emotional prosody & vocal grit transfer (contour_blend=0.55,
+     timbre_blend=0.65, dynamic pitch expansion 1.65x-2.10x, 60% English loudness
+     envelope transfer) with register-lock protection so male voices never jump
+     into chipmunk territory (>245 Hz) while gaining dramatic human inflection.
 """
 
 import argparse
 import io
+import json
 import os
 import struct
 import sys
@@ -36,10 +37,6 @@ warnings.simplefilter("ignore")
 
 
 def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
-    """
-    Prepend a valid 1-frame MPEG1 Layer3 Xing VBR header if not already present.
-    Fixes libsndfile truncation on headerless VBR MP3 streams from Nerual .awc files.
-    """
     if len(raw_mp3) < 4 or raw_mp3[0] != 0xFF or (raw_mp3[1] & 0xE0) != 0xE0:
         return raw_mp3
     if b"Xing" in raw_mp3[:512] or b"Info" in raw_mp3[:512]:
@@ -94,10 +91,6 @@ def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
 
 
 def read_audio_complete(path: str):
-    """
-    Read WAV/MP3 completely, injecting a Xing VBR header in memory for .mp3 files
-    that lack one so libsndfile never truncates VBR streams.
-    """
     raw = Path(path).read_bytes()
     if path.lower().endswith(".mp3"):
         raw = ensure_mp3_xing_header(raw)
@@ -108,10 +101,6 @@ def read_audio_complete(path: str):
 
 
 def estimate_f0_autocorr(wav: np.ndarray, sr: int) -> np.ndarray:
-    """
-    Fast time-domain autocorrelation F0 estimator in [65, 340] Hz human speech band.
-    Used both to filter out non-speech SFX bursts and to guard RMVPE against harmonic locking.
-    """
     win = int(0.04 * sr)
     hop = int(0.01 * sr)
     min_lag = int(sr / 500.0)
@@ -137,12 +126,6 @@ def find_speech_phrases(
     min_phrase_sec: float = 0.35,
     max_phrase_sec: float = 3.2,
 ):
-    """
-    Detect individual spoken phrases [start_sample, end_sample] with 10ms hop resolution.
-    Only bridges micro-pauses <= 110ms (plosive consonant closures) so adjacent speakers
-    in multi-character cutscenes (e.g. pro_mcs_1) are never merged together.
-    Filters out non-speech SFX bursts using autocorrelation F0 verification.
-    """
     if len(audio) < int(0.5 * sr):
         return [(0, len(audio))]
 
@@ -314,41 +297,43 @@ class GTA5EmotionVC:
         ru_seg_44k: np.ndarray,
         en_ref_44k: np.ndarray,
         diffusion_steps: int = 25,
-        inference_cfg_rate: float = 0.70,
-        emotion_scale: float = 1.32,
-        contour_blend: float = 0.25,
-        timbre_blend: float = 0.25,
+        inference_cfg_rate: float = 0.75,
+        emotion_scale: float = 1.75,
+        contour_blend: float = 0.55,
+        timbre_blend: float = 0.65,
     ):
         """
-        Enhance a single Russian speech phrase with the emotional prosody, dynamic pitch
-        inflection, and vocal tension of the matching English phrase while preserving
-        the Russian speaker's natural vocal register and distinct speaker identity.
+        Convert a Russian speech phrase with strong emotional prosody, pitch contour,
+        and vocal grit from the English phrase while locking the speaker's base register
+        so male voices never jump up an octave (>245 Hz).
         """
         ru_seg_44k = np.clip(ru_seg_44k, -0.99, 0.99)
         en_ref_44k = np.clip(en_ref_44k, -0.99, 0.99)
 
-        # Build clean acoustic prompt from the current Russian speaker so each character
-        # keeps 100% of their distinct voice and clean studio bass without cutscene SFX bleed
-        prompt_44k = ru_seg_44k.copy()
-        if len(prompt_44k) < int(1.2 * self.sr):
-            repeats = int(np.ceil(int(1.2 * self.sr) / max(1, len(prompt_44k))))
-            prompt_44k = np.tile(prompt_44k, repeats)[: int(1.6 * self.sr)]
-        elif len(prompt_44k) > int(4.0 * self.sr):
-            prompt_44k = prompt_44k[: int(4.0 * self.sr)]
-
         if len(en_ref_44k) < int(1.0 * self.sr):
             repeats = int(np.ceil(int(1.0 * self.sr) / max(1, len(en_ref_44k))))
-            en_ref_44k = np.tile(en_ref_44k, repeats)[: int(1.5 * self.sr)]
-        elif len(en_ref_44k) > int(6.0 * self.sr):
-            en_ref_44k = en_ref_44k[: int(6.0 * self.sr)]
+            en_ref_44k = np.tile(en_ref_44k, repeats)[: int(1.6 * self.sr)]
+        elif len(en_ref_44k) > int(4.5 * self.sr):
+            en_ref_44k = en_ref_44k[: int(4.5 * self.sr)]
+
+        # Hybrid acoustic prompt: [0.9s Russian speaker identity anchor + 1.8s English emotional delivery]
+        # This gives DiT both the character's Russian chest resonance AND the English actor's emotional grit!
+        ru_anchor = ru_seg_44k[: min(len(ru_seg_44k), int(0.9 * self.sr))]
+        en_anchor = en_ref_44k[: min(len(en_ref_44k), int(1.8 * self.sr))]
+        ru_rms = float(np.sqrt(np.mean(ru_anchor ** 2))) + 1e-5
+        en_rms = float(np.sqrt(np.mean(en_anchor ** 2))) + 1e-5
+        en_anchor_norm = np.clip(en_anchor * (ru_rms / en_rms), -0.98, 0.98)
+        prompt_44k = np.concatenate([ru_anchor, en_anchor_norm]).astype(np.float32)
 
         src_t = torch.from_numpy(ru_seg_44k).unsqueeze(0).float().to(self.device)
         prm_t = torch.from_numpy(prompt_44k).unsqueeze(0).float().to(self.device)
         ref_t = torch.from_numpy(en_ref_44k).unsqueeze(0).float().to(self.device)
+        ru_a_t = torch.from_numpy(ru_anchor).unsqueeze(0).float().to(self.device)
 
         src_16k = torchaudio.functional.resample(src_t, self.sr, 16000)
         prm_16k = torchaudio.functional.resample(prm_t, self.sr, 16000)
         ref_16k = torchaudio.functional.resample(ref_t, self.sr, 16000)
+        ru_a_16k = torchaudio.functional.resample(ru_a_t, self.sr, 16000)
 
         S_alt = self._semantic_fn(src_16k)
         S_prm = self._semantic_fn(prm_16k)
@@ -359,8 +344,8 @@ class GTA5EmotionVC:
         target_lengths = torch.LongTensor([mel_src.size(2)]).to(self.device)
         target2_lengths = torch.LongTensor([mel_prm.size(2)]).to(self.device)
 
-        # Speaker style embedding: blend Russian character identity (75%) with English emotional arousal (25%)
-        feat_ru = torchaudio.compliance.kaldi.fbank(prm_16k, num_mel_bins=80, dither=0, sample_frequency=16000)
+        # Speaker style embedding: 65% English emotional voice + 35% Russian character identity
+        feat_ru = torchaudio.compliance.kaldi.fbank(ru_a_16k, num_mel_bins=80, dither=0, sample_frequency=16000)
         feat_ru = feat_ru - feat_ru.mean(dim=0, keepdim=True)
         style_ru = self.campplus(feat_ru.unsqueeze(0))
 
@@ -369,9 +354,9 @@ class GTA5EmotionVC:
         style_en = self.campplus(feat_en.unsqueeze(0))
 
         style_mix = (1.0 - timbre_blend) * style_ru + timbre_blend * style_en
-        ru_norm = torch.norm(style_ru, dim=-1, keepdim=True) + 1e-6
+        en_norm = torch.norm(style_en, dim=-1, keepdim=True) + 1e-6
         mix_norm = torch.norm(style_mix, dim=-1, keepdim=True) + 1e-6
-        style2 = style_mix * (ru_norm / mix_norm)
+        style2 = style_mix * (en_norm / mix_norm)
 
         # Extract pitch contours via fixed RMVPE @ 16kHz
         F0_prm_np = self.f0_extractor.infer_from_audio(prm_16k[0], thred=0.03)
@@ -381,18 +366,18 @@ class GTA5EmotionVC:
         # Ground-truth autocorrelation F0 sanity anchor to prevent any harmonic octave jump
         ac_f0s = estimate_f0_autocorr(ru_seg_44k, self.sr)
         ac_med_hz = float(np.median(ac_f0s)) if len(ac_f0s) > 0 else 130.0
+        is_male = ac_med_hz < 185.0
 
-        for arr in (F0_ru_np, F0_prm_np):
-            v = arr > 1.0
-            if np.any(v):
-                # Fold down any frames where RMVPE locked onto 2nd or 3rd harmonic
-                while np.any(arr > ac_med_hz * 1.75):
-                    arr[arr > ac_med_hz * 1.75] *= 0.5
+        v_ru = F0_ru_np > 1.0
+        if np.any(v_ru):
+            while np.any(F0_ru_np > ac_med_hz * 1.75):
+                F0_ru_np[F0_ru_np > ac_med_hz * 1.75] *= 0.5
 
         voiced_ru = F0_ru_np > 1.0
         voiced_en = F0_en_np > 1.0
 
         ru_med_hz = float(np.median(F0_ru_np[voiced_ru])) if np.any(voiced_ru) else ac_med_hz
+        en_med_hz = float(np.median(F0_en_np[voiced_en])) if np.any(voiced_en) else ru_med_hz
         out_med_hz = ru_med_hz
 
         if np.any(voiced_ru):
@@ -400,26 +385,47 @@ class GTA5EmotionVC:
             med_ru = float(np.median(log_f0_ru[voiced_ru]))
             std_ru = float(np.std(log_f0_ru[voiced_ru])) + 1e-4
 
-            # Compute subtle emotional arousal pitch shift bounded strictly to [0.0, +1.0] semitone
-            ru_rms = float(np.sqrt(np.mean(ru_seg_44k ** 2))) + 1e-5
-            en_rms = float(np.sqrt(np.mean(en_ref_44k ** 2))) + 1e-5
-            arousal_semitones = float(np.clip((en_rms / ru_rms - 0.9) * 0.8, 0.0, 1.0))
-            target_med = med_ru + arousal_semitones * (np.log(2.0) / 12.0)
+            # Register-protected emotional shift toward English speaker pitch:
+            # up to [-2.5, +3.2] semitones so emotional tension is clearly heard,
+            # while blocking octave jumps (>175 Hz median on a male speaker).
+            if np.sum(voiced_en) >= 6:
+                en_f0_clean = F0_en_np[voiced_en].copy()
+                if is_male:
+                    while np.any(en_f0_clean > 240.0):
+                        en_f0_clean[en_f0_clean > 240.0] *= 0.5
+                med_en_clean = float(np.median(np.log(np.maximum(en_f0_clean, 1e-5))))
+                semi_diff = float(np.clip((med_en_clean - med_ru) * (12.0 / np.log(2.0)) * 0.65, -2.5, 3.2))
+            else:
+                semi_diff = float(np.clip((en_rms / ru_rms - 0.85) * 2.0, 0.0, 2.5))
 
-            # Expand Russian word-stress pitch contour
-            dev_ru = np.clip(log_f0_ru - med_ru, -0.26, 0.28)
-            dyn_ratio = float(np.clip(emotion_scale, 1.15, 1.45))
+            target_med = med_ru + semi_diff * (np.log(2.0) / 12.0)
+            if is_male:
+                target_med = min(target_med, np.log(175.0))
+
+            # Align prompt F0 to the same register so DiT doesn't pull pitch into falsetto
+            v_prm = F0_prm_np > 1.0
+            if np.any(v_prm):
+                med_prm = float(np.median(np.log(np.maximum(F0_prm_np[v_prm], 1e-5))))
+                F0_prm_np[v_prm] = np.clip(
+                    F0_prm_np[v_prm] * np.exp(target_med - med_prm),
+                    65.0,
+                    245.0 if is_male else 420.0,
+                )
+
+            # Strong dynamic inflection expansion (1.65x .. 2.15x) + 55% English pitch contour transfer
+            dev_ru = np.clip(log_f0_ru - med_ru, -0.42, 0.45)
+            dyn_ratio = float(np.clip(emotion_scale, 1.55, 2.15))
 
             if np.sum(voiced_en) >= 8 and contour_blend > 0.0:
                 log_f0_en = np.log(np.maximum(F0_en_np, 1e-5))
                 med_en = float(np.median(log_f0_en[voiced_en]))
                 std_en = float(np.std(log_f0_en[voiced_en])) + 1e-4
-                dyn_ratio = float(np.clip((std_en / std_ru) * 0.5 + emotion_scale * 0.6, 1.18, 1.42))
+                dyn_ratio = float(np.clip((std_en / std_ru) * 0.75 + emotion_scale * 0.65, 1.60, 2.15))
 
                 t_en = np.arange(len(log_f0_en))
-                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.22, 0.22)
+                dev_en_voiced = np.clip((log_f0_en[voiced_en] - med_en) * 1.35, -0.45, 0.48)
                 interp_en = np.interp(t_en, t_en[voiced_en], dev_en_voiced)
-                kernel = np.ones(9) / 9.0
+                kernel = np.ones(5) / 5.0
                 macro_en = np.convolve(interp_en, kernel, mode="same")
                 macro_en = macro_en - float(np.median(macro_en))
                 macro_resampled = np.interp(
@@ -427,16 +433,37 @@ class GTA5EmotionVC:
                     np.arange(len(macro_en)),
                     macro_en,
                 )
-                shifted_log = target_med + dev_ru * dyn_ratio + contour_blend * macro_resampled
+                shifted_log = (
+                    target_med
+                    + (1.0 - contour_blend) * (dev_ru * dyn_ratio)
+                    + contour_blend * (dev_ru * 1.25 + macro_resampled)
+                )
             else:
                 shifted_log = target_med + dev_ru * dyn_ratio
 
-            # Hard clamp within natural human speech inflection range [-4.5, +5.2] semitones around speaker's med_ru
-            shifted_log = np.clip(shifted_log, med_ru - 0.26, med_ru + 0.30)
+            # Allow wide, dramatic human emotional inflection [-8, +9.5] semitones while capping male ceiling at 245 Hz
+            max_ceil_log = np.log(245.0) if is_male else np.log(440.0)
+            shifted_log = np.clip(shifted_log, target_med - 0.46, min(target_med + 0.55, max_ceil_log))
             F0_shifted_np = np.where(voiced_ru, np.exp(shifted_log), 0.0).astype(np.float32)
             out_med_hz = float(np.median(F0_shifted_np[voiced_ru]))
+            out_iqr_semi = float(
+                12.0
+                * np.log2(
+                    np.percentile(F0_shifted_np[voiced_ru], 75)
+                    / max(1.0, np.percentile(F0_shifted_np[voiced_ru], 25))
+                )
+            )
+            ru_iqr_semi = float(
+                12.0
+                * np.log2(
+                    np.percentile(F0_ru_np[voiced_ru], 75)
+                    / max(1.0, np.percentile(F0_ru_np[voiced_ru], 25))
+                )
+            )
         else:
             F0_shifted_np = F0_ru_np.astype(np.float32)
+            ru_iqr_semi = 0.0
+            out_iqr_semi = 0.0
 
         F0_prm = torch.from_numpy(F0_prm_np.astype(np.float32)).to(self.device)[None]
         shifted_f0_alt = torch.from_numpy(F0_shifted_np).to(self.device)[None]
@@ -462,7 +489,7 @@ class GTA5EmotionVC:
             vc_target = vc_target[:, :, mel_prm.size(-1) :]
 
         vc_wave = self.vocoder(vc_target.float()).squeeze().cpu().numpy()
-        return vc_wave, ru_med_hz, out_med_hz
+        return vc_wave, ru_med_hz, out_med_hz, ru_iqr_semi, out_iqr_semi
 
     def process_file(
         self,
@@ -470,8 +497,8 @@ class GTA5EmotionVC:
         en_path: str,
         out_path: str,
         diffusion_steps: int = 25,
-        emotion_scale: float = 1.32,
-        contour_blend: float = 0.25,
+        emotion_scale: float = 1.75,
+        contour_blend: float = 0.55,
     ) -> dict:
         t0 = time.time()
         ru_audio, ru_sr = read_audio_complete(ru_path)
@@ -509,46 +536,42 @@ class GTA5EmotionVC:
                 torch.from_numpy(en_seg).unsqueeze(0), en_sr, self.sr
             ).squeeze(0).numpy()
 
-            vc_44k, ru_f0_hz, out_f0_hz = self.convert_phrase(
+            vc_44k, ru_f0_hz, out_f0_hz, ru_iqr, out_iqr = self.convert_phrase(
                 ru_44k,
                 en_44k,
                 diffusion_steps=diffusion_steps,
                 emotion_scale=emotion_scale,
                 contour_blend=contour_blend,
             )
-            f0_diagnostics.append(f"P{idx+1}({s/ru_sr:.2f}..{e/ru_sr:.2f}s): {ru_f0_hz:.1f}Hz->{out_f0_hz:.1f}Hz")
+            f0_diagnostics.append(
+                f"P{idx+1}({s/ru_sr:.2f}..{e/ru_sr:.2f}s): F0 {ru_f0_hz:.0f}->{out_f0_hz:.0f}Hz, IQR {ru_iqr:.1f}->{out_iqr:.1f}st"
+            )
 
             vc_ru_sr = torchaudio.functional.resample(
                 torch.from_numpy(vc_44k).unsqueeze(0), self.sr, ru_sr
             ).squeeze(0).numpy()
 
-            # Match exact sample length by trimming/padding STFT hop tail (<10ms) WITHOUT resampling pitch!
             if len(vc_ru_sr) > seg_len:
                 vc_ru_sr = vc_ru_sr[:seg_len]
             elif len(vc_ru_sr) < seg_len:
                 vc_ru_sr = np.pad(vc_ru_sr, (0, seg_len - len(vc_ru_sr)))
 
-            # Transfer dynamic amplitude envelope from English phrase (syllable punch)
-            win_env = max(1, int(0.05 * ru_sr))
+            # Transfer 60% of the English dynamic loudness envelope for dramatic punch
+            win_env = max(1, int(0.045 * ru_sr))
             env_ru = np.sqrt(np.convolve(vc_ru_sr ** 2, np.ones(win_env) / win_env, mode="same") + 1e-6)
             en_resampled = scipy.signal.resample(en_seg, seg_len).astype(np.float32)
             env_en = np.sqrt(np.convolve(en_resampled ** 2, np.ones(win_env) / win_env, mode="same") + 1e-6)
-            env_ratio = np.clip((env_en / (np.median(env_en) + 1e-5)) / (env_ru / (np.median(env_ru) + 1e-5)), 0.75, 1.35)
-            vc_ru_sr = vc_ru_sr * (0.75 + 0.25 * env_ratio)
-
-            # Preserve warm sub-220Hz chest resonance from clean Russian studio voice
-            nyq = 0.5 * ru_sr
-            sos_lp = scipy.signal.butter(4, min(220.0 / nyq, 0.9), btype="low", output="sos")
-            sos_hp = scipy.signal.butter(4, min(220.0 / nyq, 0.9), btype="high", output="sos")
-            ru_low = scipy.signal.sosfiltfilt(sos_lp, ru_seg).astype(np.float32)
-            vc_low = scipy.signal.sosfiltfilt(sos_lp, vc_ru_sr).astype(np.float32)
-            vc_high = scipy.signal.sosfiltfilt(sos_hp, vc_ru_sr).astype(np.float32)
-            vc_ru_sr = (0.65 * vc_low + 0.35 * ru_low) + vc_high
+            env_ratio = np.clip(
+                (env_en / (np.median(env_en) + 1e-5)) / (env_ru / (np.median(env_ru) + 1e-5)),
+                0.65,
+                1.60,
+            )
+            vc_ru_sr = vc_ru_sr * (0.40 + 0.60 * env_ratio)
 
             ru_rms = float(np.sqrt(np.mean(ru_seg ** 2))) + 1e-6
             en_rms = float(np.sqrt(np.mean(en_seg ** 2))) + 1e-6
             vc_rms = float(np.sqrt(np.mean(vc_ru_sr ** 2))) + 1e-6
-            target_rms = 0.70 * ru_rms + 0.30 * max(ru_rms, en_rms)
+            target_rms = 0.55 * ru_rms + 0.45 * max(ru_rms, en_rms)
             vc_ru_sr = vc_ru_sr * (target_rms / vc_rms)
 
             peak = float(np.max(np.abs(vc_ru_sr)))
@@ -581,24 +604,38 @@ class GTA5EmotionVC:
 def main():
     parser = argparse.ArgumentParser(description="GTA 5 Emotion & Timbre Transfer Engine")
     parser.add_argument("--seed-vc-dir", required=True, help="Path to extracted seed_vc_core folder")
-    parser.add_argument("--ru", required=True, help="Input Russian WAV/MP3 file")
-    parser.add_argument("--en", required=True, help="Reference English WAV file")
-    parser.add_argument("--out", required=True, help="Output enhanced Russian WAV file")
+    parser.add_argument("--ru", help="Input Russian WAV/MP3 file")
+    parser.add_argument("--en", help="Reference English WAV file")
+    parser.add_argument("--out", help="Output enhanced Russian WAV file")
+    parser.add_argument("--batch-json", help="JSON file with list of {ru, en, out} items to process in one GPU load")
     parser.add_argument("--steps", type=int, default=25, help="Diffusion steps (default: 25)")
-    parser.add_argument("--emotion-scale", type=float, default=1.32, help="Pitch expressiveness multiplier")
-    parser.add_argument("--contour-blend", type=float, default=0.25, help="Macro pitch contour transfer weight")
+    parser.add_argument("--emotion-scale", type=float, default=1.75, help="Pitch expressiveness multiplier")
+    parser.add_argument("--contour-blend", type=float, default=0.55, help="Macro pitch contour transfer weight")
     args = parser.parse_args()
 
     engine = GTA5EmotionVC(seed_vc_dir=args.seed_vc_dir)
-    info = engine.process_file(
-        ru_path=args.ru,
-        en_path=args.en,
-        out_path=args.out,
-        diffusion_steps=args.steps,
-        emotion_scale=args.emotion_scale,
-        contour_blend=args.contour_blend,
-    )
-    print(f"DONE: {info}")
+    if args.batch_json:
+        items = json.loads(Path(args.batch_json).read_text(encoding="utf-8"))
+        for item in items:
+            info = engine.process_file(
+                ru_path=item["ru"],
+                en_path=item["en"],
+                out_path=item["out"],
+                diffusion_steps=args.steps,
+                emotion_scale=args.emotion_scale,
+                contour_blend=args.contour_blend,
+            )
+            print(f"DONE: {info}", flush=True)
+    else:
+        info = engine.process_file(
+            ru_path=args.ru,
+            en_path=args.en,
+            out_path=args.out,
+            diffusion_steps=args.steps,
+            emotion_scale=args.emotion_scale,
+            contour_blend=args.contour_blend,
+        )
+        print(f"DONE: {info}", flush=True)
 
 
 if __name__ == "__main__":
