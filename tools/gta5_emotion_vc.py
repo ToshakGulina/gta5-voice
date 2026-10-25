@@ -171,29 +171,29 @@ def estimate_f0_autocorr(wave: np.ndarray, sr: int, fmin: float = 65.0, fmax: fl
 
 def apply_presence_eq_and_limiter(wave: np.ndarray, sr: int, ref_wave_44k: np.ndarray = None) -> np.ndarray:
     """
-    Match vocal presence (2.5-6 kHz) and warmth (150-350 Hz) to the English reference
-    plus soft-knee saturation so emotional lines cut through GTA 5 cutscene SFX.
+    Add natural chest warmth (150-260 Hz) and moderate vocal presence (3.2 kHz)
+    without making male voices thin or bright.
     """
     if len(wave) < 256:
         return wave
     spec = np.fft.rfft(wave)
     freqs = np.fft.rfftfreq(len(wave), d=1.0 / sr)
 
-    presence_gain = 1.28 * np.exp(-0.5 * ((freqs - 3800.0) / 1600.0) ** 2)
-    warmth_gain = 0.14 * np.exp(-0.5 * ((freqs - 210.0) / 95.0) ** 2)
-    eq_curve = 1.0 + presence_gain + warmth_gain
+    warmth_gain = 0.28 * np.exp(-0.5 * ((freqs - 185.0) / 85.0) ** 2)
+    presence_gain = 0.42 * np.exp(-0.5 * ((freqs - 3300.0) / 1400.0) ** 2)
+    eq_curve = 1.0 + warmth_gain + presence_gain
     eq_wave = np.fft.irfft(spec * eq_curve, n=len(wave)).astype(np.float32)
 
     rms_in = float(np.sqrt(np.mean(wave ** 2))) + 1e-6
     rms_eq = float(np.sqrt(np.mean(eq_wave ** 2))) + 1e-6
-    target_rms = rms_in * 1.08
+    target_rms = rms_in * 1.06
     if ref_wave_44k is not None and len(ref_wave_44k) > 256:
         rms_ref = float(np.sqrt(np.mean(ref_wave_44k ** 2)))
         if rms_ref > rms_in:
-            target_rms = min(0.28, rms_in * 0.65 + rms_ref * 0.35)
+            target_rms = min(0.27, rms_in * 0.68 + rms_ref * 0.32)
 
     eq_wave = eq_wave * (target_rms / rms_eq)
-    out = np.tanh(eq_wave * 1.15) / np.tanh(1.15)
+    out = np.tanh(eq_wave * 1.12) / np.tanh(1.12)
     return out.astype(np.float32)
 
 
@@ -367,13 +367,11 @@ class GTA5EmotionVC:
         diffusion_steps: int = 25,
         inference_cfg_rate: float = 0.75,
         emotion_scale: float = 1.75,
-        contour_blend: float = 0.70,
-        timbre_blend: float = 0.65,
+        timbre_blend: float = 0.55,
     ):
         """
         Convert a Russian speech phrase with the true English pitch contour and vocal
-        grit while preserving natural male/female register and without inverting F0
-        when the English actor shouts above 240 Hz.
+        grit while keeping the Russian speaker's deep natural chest timbre & register.
         """
         ru_seg_44k = np.clip(ru_seg_44k, -0.99, 0.99)
         en_ref_44k = np.clip(en_ref_44k, -0.99, 0.99)
@@ -384,8 +382,34 @@ class GTA5EmotionVC:
         elif len(en_ref_44k) > int(4.5 * self.sr):
             en_ref_44k = en_ref_44k[: int(4.5 * self.sr)]
 
-        ru_anchor = ru_seg_44k[: min(len(ru_seg_44k), int(0.9 * self.sr))]
-        en_anchor = en_ref_44k[: min(len(en_ref_44k), int(1.8 * self.sr))]
+        ac_ru_f0s = estimate_f0_autocorr(ru_seg_44k, self.sr)
+        ac_ru_med = float(np.median(ac_ru_f0s)) if len(ac_ru_f0s) > 0 else 130.0
+        is_male = ac_ru_med < 185.0
+
+        ac_en_f0s = estimate_f0_autocorr(en_ref_44k, self.sr)
+        ac_en_med = float(np.median(ac_en_f0s)) if len(ac_en_f0s) > 0 else ac_ru_med
+
+        # If the English reference speaker is much higher-pitched than the Russian male voice
+        # (e.g. 223 Hz vs 134 Hz in 0x1227C3A3), formant/pitch-shift the acoustic prompt anchor
+        # down into the Russian speaker's chest register so DiT & CAMPPlus never make the timbre high/thin!
+        en_for_timbre = en_ref_44k
+        eff_timbre_blend = timbre_blend
+        if is_male and ac_en_med > ac_ru_med * 1.25:
+            shift_ratio = max(0.68, min(0.88, (ac_ru_med / ac_en_med) ** 0.70))
+            shifted_sr = int(round(self.sr / shift_ratio))
+            en_for_timbre = (
+                torchaudio.functional.resample(
+                    torch.from_numpy(en_ref_44k).unsqueeze(0).float(),
+                    shifted_sr,
+                    self.sr,
+                )
+                .squeeze(0)
+                .numpy()
+            )
+            eff_timbre_blend = min(timbre_blend, 0.35)
+
+        ru_anchor = ru_seg_44k[: min(len(ru_seg_44k), int(1.2 * self.sr))]
+        en_anchor = en_for_timbre[: min(len(en_for_timbre), int(1.2 * self.sr))]
         ru_rms = float(np.sqrt(np.mean(ru_anchor ** 2))) + 1e-5
         en_rms = float(np.sqrt(np.mean(en_anchor ** 2))) + 1e-5
         en_anchor_norm = np.clip(en_anchor * (ru_rms / en_rms), -0.98, 0.98)
@@ -394,11 +418,13 @@ class GTA5EmotionVC:
         src_t = torch.from_numpy(ru_seg_44k).unsqueeze(0).float().to(self.device)
         prm_t = torch.from_numpy(prompt_44k).unsqueeze(0).float().to(self.device)
         ref_t = torch.from_numpy(en_ref_44k).unsqueeze(0).float().to(self.device)
+        tim_t = torch.from_numpy(en_for_timbre).unsqueeze(0).float().to(self.device)
         ru_a_t = torch.from_numpy(ru_anchor).unsqueeze(0).float().to(self.device)
 
         src_16k = torchaudio.functional.resample(src_t, self.sr, 16000)
         prm_16k = torchaudio.functional.resample(prm_t, self.sr, 16000)
         ref_16k = torchaudio.functional.resample(ref_t, self.sr, 16000)
+        tim_16k = torchaudio.functional.resample(tim_t, self.sr, 16000)
         ru_a_16k = torchaudio.functional.resample(ru_a_t, self.sr, 16000)
 
         S_alt = self._semantic_fn(src_16k)
@@ -414,25 +440,18 @@ class GTA5EmotionVC:
         feat_ru = feat_ru - feat_ru.mean(dim=0, keepdim=True)
         style_ru = self.campplus(feat_ru.unsqueeze(0))
 
-        feat_en = torchaudio.compliance.kaldi.fbank(ref_16k, num_mel_bins=80, dither=0, sample_frequency=16000)
+        feat_en = torchaudio.compliance.kaldi.fbank(tim_16k, num_mel_bins=80, dither=0, sample_frequency=16000)
         feat_en = feat_en - feat_en.mean(dim=0, keepdim=True)
         style_en = self.campplus(feat_en.unsqueeze(0))
 
-        style_mix = (1.0 - timbre_blend) * style_ru + timbre_blend * style_en
-        en_norm = torch.norm(style_en, dim=-1, keepdim=True) + 1e-6
+        style_mix = (1.0 - eff_timbre_blend) * style_ru + eff_timbre_blend * style_en
+        ru_norm = torch.norm(style_ru, dim=-1, keepdim=True) + 1e-6
         mix_norm = torch.norm(style_mix, dim=-1, keepdim=True) + 1e-6
-        style2 = style_mix * (en_norm / mix_norm)
+        style2 = style_mix * (ru_norm / mix_norm)
 
         F0_prm_np = self.f0_extractor.infer_from_audio(prm_16k[0], thred=0.03)
         F0_ru_np = self.f0_extractor.infer_from_audio(src_16k[0], thred=0.03)
         F0_en_np = self.f0_extractor.infer_from_audio(ref_16k[0], thred=0.03)
-
-        ac_ru_f0s = estimate_f0_autocorr(ru_seg_44k, self.sr)
-        ac_ru_med = float(np.median(ac_ru_f0s)) if len(ac_ru_f0s) > 0 else 130.0
-        is_male = ac_ru_med < 185.0
-
-        ac_en_f0s = estimate_f0_autocorr(en_ref_44k, self.sr)
-        ac_en_med = float(np.median(ac_en_f0s)) if len(ac_en_f0s) > 0 else ac_ru_med
 
         # Fold octave errors on Russian TTS relative to its own autocorrelation median
         v_ru = F0_ru_np > 1.0
@@ -461,21 +480,20 @@ class GTA5EmotionVC:
             log_f0_ru = np.log(np.maximum(F0_ru_np, 1e-5))
             med_ru = float(np.median(log_f0_ru[voiced_ru]))
 
+            # Keep base register locked closely to the Russian speaker's natural chest pitch
+            # (at most +1.0 semitone upward shift when the English voice is high-pitched)
             if np.sum(voiced_en) >= 6:
                 log_f0_en_all = np.log(np.maximum(F0_en_np, 1e-5))
                 med_en = float(np.median(log_f0_en_all[voiced_en]))
-                semi_diff = float(np.clip((med_en - med_ru) * (12.0 / np.log(2.0)) * 0.55, -2.5, 4.2))
+                semi_diff = float(np.clip((med_en - med_ru) * (12.0 / np.log(2.0)) * 0.18, -1.5, 1.0))
             else:
-                semi_diff = float(np.clip((en_rms / ru_rms - 0.85) * 2.0, 0.0, 2.5))
+                semi_diff = float(np.clip((en_rms / ru_rms - 0.85) * 1.2, 0.0, 1.0))
 
             target_med = med_ru + semi_diff * (np.log(2.0) / 12.0)
             if is_male:
-                target_med = min(target_med, np.log(178.0))
+                target_med = min(target_med, np.log(max(ru_med_hz * 1.06, 142.0)))
 
-            # Dynamic ceiling allows high emotional shouts (like 0x1227C3A3's 444Hz opening)
-            en_peak_hz = float(np.percentile(F0_en_np[voiced_en], 95)) if np.any(voiced_en) else 240.0
-            male_ceil_hz = max(265.0, min(350.0, en_peak_hz * 0.82))
-            max_ceil_hz = male_ceil_hz if is_male else 460.0
+            max_ceil_hz = 218.0 if is_male else 420.0
 
             # Normalize the two halves of the hybrid prompt [ru_anchor, en_anchor] separately
             ru_p_frames = int(round(len(ru_anchor) / float(self.sr) * 100.0))
@@ -490,9 +508,7 @@ class GTA5EmotionVC:
                         max_ceil_hz,
                     )
 
-            # 50ms (5-frame) Macro/Micro Pitch Decomposition:
-            # micro_ru (<50ms) = fast consonant/vowel onset transitions only
-            # macro_en (>=50ms) = complete word stress and sentence intonation arch from English!
+            # 50ms (5-frame) Macro/Micro Pitch Decomposition
             t_ru = np.arange(len(log_f0_ru))
             ru_idx = np.where(voiced_ru)[0]
             v_ru_0, v_ru_1 = int(ru_idx[0]), int(ru_idx[-1])
@@ -511,12 +527,19 @@ class GTA5EmotionVC:
                 en_idx = np.where(voiced_en)[0]
                 v_en_0, v_en_1 = int(en_idx[0]), int(en_idx[-1])
 
-                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.65, 0.72)
+                dev_en_voiced = np.clip(log_f0_en[voiced_en] - med_en, -0.50, 0.52)
                 interp_en = np.interp(t_en, t_en[voiced_en], dev_en_voiced)
                 macro_en = np.convolve(interp_en, k5, mode="same")
                 macro_en_span = macro_en[v_en_0 : v_en_1 + 1]
                 if len(macro_en_span) >= 4 and (v_ru_1 > v_ru_0):
                     macro_en_span = macro_en_span - float(np.median(macro_en_span))
+                    ru_span = macro_ru[v_ru_0 : v_ru_1 + 1]
+                    ru_iqr_raw = float(np.percentile(ru_span, 75) - np.percentile(ru_span, 25))
+                    en_iqr_raw = float(np.percentile(macro_en_span, 75) - np.percentile(macro_en_span, 25))
+                    gain = 0.92
+                    if en_iqr_raw > 0.02 and ru_iqr_raw > en_iqr_raw * 0.90:
+                        gain = min(1.55, max(0.95, (ru_iqr_raw / en_iqr_raw) * 1.15))
+
                     macro_en_aligned = np.zeros_like(log_f0_ru)
                     ru_span_len = v_ru_1 - v_ru_0 + 1
                     macro_en_aligned[v_ru_0 : v_ru_1 + 1] = np.interp(
@@ -524,14 +547,14 @@ class GTA5EmotionVC:
                         np.arange(len(macro_en_span)),
                         macro_en_span,
                     )
-                    shifted_log = target_med + 1.15 * macro_en_aligned + 0.25 * micro_ru
+                    shifted_log = target_med + gain * macro_en_aligned + 0.28 * micro_ru
                 else:
-                    shifted_log = target_med + interp_ru * 1.60
+                    shifted_log = target_med + interp_ru * 1.50
             else:
-                shifted_log = target_med + interp_ru * 1.60
+                shifted_log = target_med + interp_ru * 1.50
 
             max_ceil_log = np.log(max_ceil_hz)
-            shifted_log = np.clip(shifted_log, target_med - 0.58, min(target_med + 0.72, max_ceil_log))
+            shifted_log = np.clip(shifted_log, target_med - 0.42, min(target_med + 0.46, max_ceil_log))
             F0_shifted_np = np.where(voiced_ru, np.exp(shifted_log), 0.0).astype(np.float32)
             out_med_hz = float(np.median(F0_shifted_np[voiced_ru]))
             out_iqr_semi = float(
@@ -577,7 +600,7 @@ class GTA5EmotionVC:
         vc_wave = self.vocoder(vc_target.float()).squeeze()[None]
         out_np = vc_wave.squeeze(0).cpu().numpy()
 
-        out_np = apply_presence_eq_and_limiter(out_np, self.sr, ref_wave_44k=en_ref_44k)
+        out_np = apply_presence_eq_and_limiter(out_np, self.sr, ref_wave_44k=en_for_timbre)
         return out_np, (ru_med_hz, en_med_hz, out_med_hz, ru_iqr_semi, out_iqr_semi)
 
     def enhance_phrase(
@@ -615,6 +638,7 @@ class GTA5EmotionVC:
         if len(phrases) == 0:
             phrases = [(0, len(ru_44k))]
 
+        is_cutscene = len(ru_44k) > int(5.0 * self.sr)
         out_44k = ru_44k.copy()
         f0_stats = []
 
@@ -623,17 +647,29 @@ class GTA5EmotionVC:
             if seg_len < int(0.18 * self.sr):
                 continue
 
-            if len(en_phrases) > 0:
-                best_en = min(
-                    en_phrases,
-                    key=lambda ep: abs(0.5 * (ep[0] + ep[1]) / len(en_44k) - 0.5 * (s + e) / len(ru_44k)),
-                )
-                en_s, en_e = best_en
-                en_ref = en_44k[en_s:en_e]
-            else:
-                rel_s = int((s / len(ru_44k)) * len(en_44k))
-                rel_e = min(len(en_44k), rel_s + max(seg_len, int(1.5 * self.sr)))
-                en_ref = en_44k[rel_s:rel_e]
+            en_ref = None
+            if is_cutscene:
+                # In GTA 5 cutscenes, Russian and English timelines are synchronized:
+                # take the exact matching timestamp window [s-0.15s .. e+0.25s] first!
+                s_en = max(0, int(round(s * len(en_44k) / float(len(ru_44k)))) - int(0.15 * self.sr))
+                e_en = min(len(en_44k), int(round(e * len(en_44k) / float(len(ru_44k)))) + int(0.25 * self.sr))
+                if e_en - s_en >= int(0.25 * self.sr):
+                    cand = en_44k[s_en:e_en]
+                    if float(np.sqrt(np.mean(cand ** 2))) > 0.008:
+                        en_ref = cand
+
+            if en_ref is None:
+                if len(en_phrases) > 0:
+                    best_en = min(
+                        en_phrases,
+                        key=lambda ep: abs(0.5 * (ep[0] + ep[1]) / len(en_44k) - 0.5 * (s + e) / len(ru_44k)),
+                    )
+                    en_s, en_e = best_en
+                    en_ref = en_44k[en_s:en_e]
+                else:
+                    rel_s = int((s / len(ru_44k)) * len(en_44k))
+                    rel_e = min(len(en_44k), rel_s + max(seg_len, int(1.5 * self.sr)))
+                    en_ref = en_44k[rel_s:rel_e]
 
             chunk_max = int(8.0 * self.sr)
             if seg_len <= chunk_max:
@@ -727,8 +763,10 @@ class GTA5EmotionVC:
     ) -> dict:
         """
         Enhance either a single (ru_file, en_file) pair OR a multichannel unpacked
-        directory pair (e.g. 3-channel cutscenes pro_mcs_2 and pro_mcs_3_pt1),
-        mixing all active character stems into out_path.
+        directory pair (e.g. 3-channel cutscenes pro_mcs_2 and pro_mcs_3_pt1).
+        In 3-channel _mastered_only.awc files, all 3 channels are Left/Right/Center
+        surround stems of the SAME dialogue — so we select the single highest-energy
+        (Center/primary) stream and run inference ONCE to eliminate chorus/tripling!
         """
         if not os.path.isdir(ru_path):
             return self.enhance_phrase(
@@ -741,7 +779,6 @@ class GTA5EmotionVC:
                 emotion_scale=emotion_scale,
             )
 
-        t0 = time.time()
         ru_dir = Path(ru_path)
         en_dir = Path(en_path)
         ru_files = sorted(
@@ -751,9 +788,19 @@ class GTA5EmotionVC:
         if not ru_files or not en_files:
             raise ValueError(f"No valid audio streams in {ru_dir} ({len(ru_files)}) or {en_dir} ({len(en_files)})")
 
-        en_by_stem = {p.stem.upper(): p for p in en_files}
-        # Find highest-RMS English file as fallback reference
-        best_en_fallback = en_files[0]
+        best_ru = None
+        best_ru_rms = -1.0
+        for rp in ru_files:
+            try:
+                rw, _ = read_audio_complete(str(rp))
+                rrms = float(np.sqrt(np.mean(rw ** 2)))
+                if rrms > best_ru_rms:
+                    best_ru_rms = rrms
+                    best_ru = rp
+            except Exception:
+                pass
+
+        best_en = None
         best_en_rms = -1.0
         for ep in en_files:
             try:
@@ -761,83 +808,24 @@ class GTA5EmotionVC:
                 erms = float(np.sqrt(np.mean(ew ** 2)))
                 if erms > best_en_rms:
                     best_en_rms = erms
-                    best_en_fallback = ep
+                    best_en = ep
             except Exception:
                 pass
 
-        mixed_wave = None
-        mixed_sr = target_sr
-        total_phrases = 0
-        all_f0_stats = []
+        if best_ru is None or best_en is None:
+            raise ValueError(f"No readable audio stream in {ru_dir} or {en_dir}")
 
-        for rp in ru_files:
-            try:
-                rw, rsr = read_audio_complete(str(rp))
-            except Exception as ex:
-                print(f"[GTA5EmotionVC] Skipping unreadable stream {rp.name}: {ex}")
-                continue
-            if len(rw) < int(0.1 * rsr) or float(np.max(np.abs(rw))) < 0.005:
-                continue
-
-            ep = en_by_stem.get(rp.stem.upper(), best_en_fallback)
-            try:
-                ew, esr = read_audio_complete(str(ep))
-                if float(np.max(np.abs(ew))) < 0.01:
-                    ep = best_en_fallback
-            except Exception:
-                ep = best_en_fallback
-
-            chan_out = ru_dir / f"enhanced_{rp.stem}.wav"
-            st = self.enhance_phrase(
-                ru_path=str(rp),
-                en_path=str(ep),
-                out_path=str(chan_out),
-                target_sr=target_sr,
-                diffusion_steps=diffusion_steps,
-                inference_cfg_rate=inference_cfg_rate,
-                emotion_scale=emotion_scale,
-            )
-            total_phrases += st["phrases_enhanced"]
-            if st["f0_summary"]:
-                all_f0_stats.append(f"[{rp.stem}] {st['f0_summary']}")
-
-            cw, csr = sf.read(str(chan_out), dtype="float32")
-            if mixed_wave is None:
-                mixed_wave = cw.copy()
-                mixed_sr = csr
-            else:
-                if csr != mixed_sr:
-                    cw = (
-                        torchaudio.functional.resample(torch.from_numpy(cw).unsqueeze(0), csr, mixed_sr)
-                        .squeeze(0)
-                        .numpy()
-                    )
-                if len(cw) > len(mixed_wave):
-                    mixed_wave = np.pad(mixed_wave, (0, len(cw) - len(mixed_wave)))
-                elif len(cw) < len(mixed_wave):
-                    cw = np.pad(cw, (0, len(mixed_wave) - len(cw)))
-                mixed_wave = mixed_wave + cw
-
-        if mixed_wave is None:
-            raise ValueError(f"No active speech channels found in {ru_dir}")
-
-        peak = float(np.max(np.abs(mixed_wave))) if len(mixed_wave) > 0 else 0.0
-        if peak > 0.98:
-            mixed_wave = mixed_wave * (0.98 / peak)
-
-        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-        sf.write(out_path, mixed_wave, mixed_sr, subtype="PCM_16")
-        dt = time.time() - t0
-        return {
-            "ru_path": ru_path,
-            "en_path": en_path,
-            "out_path": out_path,
-            "out_sr": mixed_sr,
-            "duration_sec": round(len(mixed_wave) / float(mixed_sr), 3),
-            "phrases_enhanced": total_phrases,
-            "f0_summary": " | ".join(all_f0_stats),
-            "elapsed_sec": round(dt, 2),
-        }
+        st = self.enhance_phrase(
+            ru_path=str(best_ru),
+            en_path=str(best_en),
+            out_path=out_path,
+            target_sr=target_sr,
+            diffusion_steps=diffusion_steps,
+            inference_cfg_rate=inference_cfg_rate,
+            emotion_scale=emotion_scale,
+        )
+        st["f0_summary"] = f"[primary {best_ru.stem}/{best_en.stem}] " + st["f0_summary"]
+        return st
 
 
 def main():
