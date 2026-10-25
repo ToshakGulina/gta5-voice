@@ -101,9 +101,13 @@ $gpuTest = & $VenvPy -c "import torch; print('Torch:', torch.__version__, 'CUDA:
 Add-Line ("GPU Check: " + ($gpuTest -join "; "))
 Add-Line ""
 
-# 3. Run Emotion & Timbre Transfer on 2 real sample files!
-Add-Line "=== 3. RUNNING EMOTION & TIMBRE TRANSFER ON SAMPLE FILES ==="
+# 3. Re-unpack Russian AWC with Xing VBR headers & Run Emotion VC on 2 sample files!
+Add-Line "=== 3. RE-UNPACKING VBR MP3s (WITH XING HEADER) & RUNNING EMOTION VC ==="
+$AwcTool = Join-Path $ToolsDir "gta5_awc_tool.py"
 $VcScript = Join-Path $ToolsDir "gta5_emotion_vc.py"
+
+& $VenvPy $AwcTool unpack (Join-Path $SampleDir "engph.awc") (Join-Path $SampleDir "ru_engph_unpacked") | Out-Null
+& $VenvPy $AwcTool unpack (Join-Path $SampleDir "pro_mcs_1_mastered_only.awc") (Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked") | Out-Null
 
 $RuEngph = Join-Path $SampleDir "ru_engph_unpacked\0x0769AE27.mp3"
 $EnEngph = Join-Path $EngDir "engph_unpacked\0x0769AE27.wav"

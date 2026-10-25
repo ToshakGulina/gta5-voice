@@ -247,6 +247,91 @@ def write_wav_mono16(path: Path, pcm_data: bytes, sample_rate: int) -> None:
         wf.writeframes(pcm_data)
 
 
+def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
+    """
+    Prepend a valid 1-frame MPEG1 Layer3 Xing VBR header if not already present.
+    Raw VBR MP3 streams inside Nerual .awc containers lack a Xing/Info frame; when the
+    first frame has a high bitrate (e.g. 160 kbps in engph.awc) while subsequent frames
+    average ~65 kbps, libsndfile (soundfile.read) underestimates total duration from the
+    first frame and truncates ~50% of the phrase ('Хватит болтать' instead of
+    'Хватит болтать, чёрт побери'). Adding a Xing frame fixes libsndfile & media players.
+    """
+    if len(raw_mp3) < 4 or raw_mp3[0] != 0xFF or (raw_mp3[1] & 0xE0) != 0xE0:
+        return raw_mp3
+    if b"Xing" in raw_mp3[:512] or b"Info" in raw_mp3[:512]:
+        return raw_mp3
+
+    br_tab = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0]
+    sr_tab = [44100, 48000, 32000, 0]
+
+    pos = 0
+    frames = 0
+    first_sr_idx = 0
+    first_mode = 3
+    while pos + 4 <= len(raw_mp3):
+        if raw_mp3[pos] != 0xFF or (raw_mp3[pos + 1] & 0xE0) != 0xE0:
+            pos += 1
+            continue
+        b1, b2, b3 = raw_mp3[pos + 1], raw_mp3[pos + 2], raw_mp3[pos + 3]
+        br_idx = (b2 >> 4) & 0xF
+        sr_idx = (b2 >> 2) & 0x3
+        pad = (b2 >> 1) & 0x1
+        mode = (b3 >> 6) & 0x3
+        br = br_tab[br_idx] * 1000
+        sr = sr_tab[sr_idx]
+        if br == 0 or sr == 0:
+            pos += 1
+            continue
+        if frames == 0:
+            first_sr_idx = sr_idx
+            first_mode = mode
+        flen = (144 * br) // sr + pad
+        frames += 1
+        pos += flen
+
+    if frames == 0:
+        return raw_mp3
+
+    sr = sr_tab[first_sr_idx]
+    br_idx = 1  # 32 kbps
+    flen = (144 * 32000) // sr
+    hdr = bytearray(flen)
+    hdr[0] = 0xFF
+    hdr[1] = 0xFB
+    hdr[2] = (br_idx << 4) | (first_sr_idx << 2)
+    hdr[3] = (first_mode << 6)
+    xing_off = 4 + (17 if first_mode == 3 else 32)
+    if xing_off + 16 <= flen:
+        total_bytes = len(raw_mp3) + flen
+        hdr[xing_off : xing_off + 4] = b"Xing"
+        struct.pack_into(">III", hdr, xing_off + 4, 0x0003, frames, total_bytes)
+        return bytes(hdr) + raw_mp3
+    return raw_mp3
+
+
+def resample_pcm16_mono(pcm: bytes, src_samples: int, dst_samples: int) -> bytes:
+    """
+    Linearly resample mono 16-bit PCM from src_samples to dst_samples using pure stdlib/array.
+    """
+    if src_samples <= 0 or dst_samples <= 0 or src_samples == dst_samples:
+        return pcm[: dst_samples * 2]
+    src_arr = array.array("h")
+    src_arr.frombytes(pcm[: src_samples * 2])
+    dst_arr = array.array("h", [0] * dst_samples)
+    scale = (src_samples - 1) / max(1, dst_samples - 1)
+    for i in range(dst_samples):
+        pos = i * scale
+        idx = int(pos)
+        frac = pos - idx
+        if idx + 1 < src_samples:
+            val = int(round(src_arr[idx] * (1.0 - frac) + src_arr[idx + 1] * frac))
+        else:
+            val = src_arr[idx]
+        dst_arr[i] = max(-32768, min(32767, val))
+    return dst_arr.tobytes()
+
+
+
 def read_wav_mono16(path: Path) -> Tuple[bytes, int, int]:
     """
     Читает .wav файл (безопасно пропуская любые LIST/fact/JUNK чанки через стандартный модуль wave).
@@ -485,7 +570,7 @@ class AwcContainer:
                     manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = wav_name
                 elif codec == CODEC_MPEG:
                     mp3_name = f"0x{s.stream_id:08X}.mp3"
-                    (out_dir / mp3_name).write_bytes(dat.data)
+                    (out_dir / mp3_name).write_bytes(ensure_mp3_xing_header(dat.data))
                     manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = mp3_name
                 else:
                     raise ValueError(f"Неподдерживаемый кодек {codec} в потоке 0x{s.stream_id:08X}")
@@ -550,7 +635,7 @@ class AwcContainer:
                     manifest["exported_wavs"][f"0x{cid:08X}"] = wav_name
                 elif codec == CODEC_MPEG:
                     mp3_name = f"0x{cid:08X}.mp3"
-                    (out_dir / mp3_name).write_bytes(raw_chan)
+                    (out_dir / mp3_name).write_bytes(ensure_mp3_xing_header(raw_chan))
                     manifest["exported_wavs"][f"0x{cid:08X}"] = mp3_name
                 else:
                     raise ValueError(f"Неподдерживаемый кодек {codec} в канале 0x{cid:08X}")
@@ -584,7 +669,10 @@ class AwcContainer:
                     if len(pcm) < target_len:
                         pcm = pcm + b"\x00" * (target_len - len(pcm))
                     else:
-                        pcm = pcm[:target_len]
+                        # Preserve full phrase duration without cutting off trailing words:
+                        # resample new_samples -> samples and adjust new_sr proportionally!
+                        pcm = resample_pcm16_mono(pcm, new_samples, samples)
+                        new_sr = max(8000, min(48000, int(round(new_sr * samples / max(1, new_samples)))))
                     new_samples = samples
 
                 if codec == CODEC_ADPCM:
