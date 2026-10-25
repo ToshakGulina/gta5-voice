@@ -42,17 +42,15 @@ internal static class Program
             return;
         }
 
-        Console.WriteLine("Generating NG Encryption LUTs (one-time setup, ~3 seconds)...");
+        Console.WriteLine("Generating NG Encryption LUTs (one-time setup, ~5 seconds)...");
         GTA5Keys.PC_NG_ENCRYPT_TABLES = new uint[17][][];
         GTA5Keys.PC_NG_ENCRYPT_LUTs   = new GTA5NGLUT[17][];
 
-        GTA5Keys.PC_NG_ENCRYPT_TABLES[0] = RandomGauss.Solve(GTA5Keys.PC_NG_DECRYPT_TABLES[0]);
-        GTA5Keys.PC_NG_ENCRYPT_TABLES[1] = RandomGauss.Solve(GTA5Keys.PC_NG_DECRYPT_TABLES[1]);
-        for (int k = 2; k <= 15; k++)
+        for (int k = 0; k < 17; k++)
         {
-            GTA5Keys.PC_NG_ENCRYPT_LUTs[k] = LookUpTableGenerator.BuildLUTs2(GTA5Keys.PC_NG_DECRYPT_TABLES[k]);
+            GTA5Keys.PC_NG_ENCRYPT_TABLES[k] = RandomGauss.Solve(GTA5Keys.PC_NG_DECRYPT_TABLES[k]);
+            GTA5Keys.PC_NG_ENCRYPT_LUTs[k]   = LookUpTableGenerator.BuildLUTs2(GTA5Keys.PC_NG_DECRYPT_TABLES[k]);
         }
-        GTA5Keys.PC_NG_ENCRYPT_TABLES[16] = RandomGauss.Solve(GTA5Keys.PC_NG_DECRYPT_TABLES[16]);
 
         CryptoIO.WriteNgTables(tablesFile, GTA5Keys.PC_NG_ENCRYPT_TABLES);
         CryptoIO.WriteLuts(lutsFile, GTA5Keys.PC_NG_ENCRYPT_LUTs);
@@ -163,6 +161,7 @@ internal static class Program
 
     private static int Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         if (args.Length < 3)
         {
             Console.WriteLine("Usage:");

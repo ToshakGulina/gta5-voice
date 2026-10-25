@@ -3,6 +3,13 @@ param(
     [string]$GameDir   = "D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV"
 )
 
+chcp 65001 > $null
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
+$env:DOTNET_CLI_UI_LANGUAGE = "en"
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Continue"
 
@@ -63,7 +70,7 @@ function Send-ToGitHub([string]$LocalFile, [string]$RepoPath) {
     Write-Host "SUCCESS: Uploaded $RepoPath to GitHub!" -ForegroundColor Green
 }
 
-Add-Line "=== STEP 6: NATIVE RPF NG INJECTION + RTX 5070 Ti EMOTION VC TEST ==="
+Add-Line "=== STEP 6 (FIXED): NATIVE RPF NG INJECTION + RTX 5070 Ti EMOTION VC TEST ==="
 Add-Line ("Timestamp: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss"))
 Add-Line ""
 
@@ -85,24 +92,9 @@ Add-Line ("RPF Inject output:`n" + ($injOut -join "`n"))
 Remove-Item -LiteralPath $TestPrologueRpf -Force -ErrorAction SilentlyContinue
 Add-Line ""
 
-# 2. Setup Python venv on D:\gta5-voice\.venv with PyTorch cu128 (RTX 5070 Ti sm_120)
-Add-Line "=== 2. SETTING UP PYTORCH CU128 VENV ON D:\gta5-voice\.venv ==="
-$SysPy = "C:\Users\anton\AppData\Local\Python\bin\python.exe"
+# 2. Check Venv (already installed on previous run!)
+Add-Line "=== 2. CHECKING PYTORCH CU128 VENV ON D:\gta5-voice\.venv ==="
 $VenvPy = Join-Path $VenvDir "Scripts\python.exe"
-
-if (-not (Test-Path $VenvPy)) {
-    Write-Host "Creating virtual environment in $VenvDir ..." -ForegroundColor Cyan
-    & $SysPy -m venv $VenvDir
-}
-
-Write-Host "Installing PyTorch cu128 (for RTX 5070 Ti) and Seed-VC dependencies (1-2 mins)..." -ForegroundColor Cyan
-& $VenvPy -m pip install --upgrade pip -q
-$pipTorch = & $VenvPy -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128 -q 2>&1
-Add-Line ("pip torch cu128: " + ($pipTorch -join "; "))
-
-$pipDeps = & $VenvPy -m pip install numpy scipy soundfile pyyaml munch einops huggingface_hub transformers hydra-core omegaconf -q 2>&1
-Add-Line ("pip deps: " + ($pipDeps -join "; "))
-
 $gpuTest = & $VenvPy -c "import torch; print('Torch:', torch.__version__, 'CUDA:', torch.cuda.is_available(), 'Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')" 2>&1
 Add-Line ("GPU Check: " + ($gpuTest -join "; "))
 Add-Line ""
