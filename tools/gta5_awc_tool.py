@@ -62,6 +62,13 @@ CHUNK_NAMES = {
 
 CODEC_PCM = 0
 CODEC_ADPCM = 4
+CODEC_MPEG = 7
+
+CODEC_NAMES = {
+    CODEC_PCM: "PCM",
+    CODEC_ADPCM: "ADPCM",
+    CODEC_MPEG: "MPEG (MP3)",
+}
 
 # Таблицы IMA ADPCM (стандарт Rockstar / IMA)
 IMA_INDEX_TABLE = [
@@ -412,7 +419,7 @@ class AwcContainer:
                             "samples": samples,
                             "sample_rate": sr,
                             "duration_sec": round(samples / sr, 3) if sr else 0,
-                            "codec": "ADPCM" if codec == CODEC_ADPCM else ("PCM" if codec == CODEC_PCM else codec),
+                            "codec": CODEC_NAMES.get(codec, codec),
                             "headroom": headroom,
                         }
                     )
@@ -436,7 +443,7 @@ class AwcContainer:
                             "samples": samples,
                             "sample_rate": sr,
                             "duration_sec": round(samples / sr, 3) if sr else 0,
-                            "codec": "ADPCM" if codec == CODEC_ADPCM else ("PCM" if codec == CODEC_PCM else codec),
+                            "codec": CODEC_NAMES.get(codec, codec),
                             "headroom": headroom,
                         }
             for s in self.streams:
@@ -466,14 +473,20 @@ class AwcContainer:
                 )
                 if codec == CODEC_ADPCM:
                     pcm = decode_adpcm(dat.data, samples)
+                    wav_name = f"0x{s.stream_id:08X}.wav"
+                    write_wav_mono16(out_dir / wav_name, pcm, sr)
+                    manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = wav_name
                 elif codec == CODEC_PCM:
                     pcm = dat.data[: samples * 2]
+                    wav_name = f"0x{s.stream_id:08X}.wav"
+                    write_wav_mono16(out_dir / wav_name, pcm, sr)
+                    manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = wav_name
+                elif codec == CODEC_MPEG:
+                    mp3_name = f"0x{s.stream_id:08X}.mp3"
+                    (out_dir / mp3_name).write_bytes(dat.data)
+                    manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = mp3_name
                 else:
                     raise ValueError(f"Неподдерживаемый кодек {codec} в потоке 0x{s.stream_id:08X}")
-
-                wav_name = f"0x{s.stream_id:08X}.wav"
-                write_wav_mono16(out_dir / wav_name, pcm, sr)
-                manifest["exported_wavs"][f"0x{s.stream_id:08X}"] = wav_name
         else:
             mc_src = next((s for s in self.streams if s.stream_id == 0), None)
             if not mc_src:
@@ -509,23 +522,36 @@ class AwcContainer:
                 padc = (0x800 - (r_pos % 0x800)) % 0x800
                 r_pos += padc
                 for c_idx in range(chan_count):
-                    blk_cnt = chan_headers[c_idx][1]
-                    byte_cnt = blk_cnt * 2048
-                    chan_raw_Streams[c_idx].extend(b_data[r_pos : r_pos + byte_cnt])
-                    r_pos += byte_cnt
+                    start_blk, blk_cnt, u1, smp_cnt, u2, u3 = chan_headers[c_idx]
+                    codec = channels_meta[c_idx][4]
+                    if codec == CODEC_MPEG and u3 > 0:
+                        chan_raw_Streams[c_idx].extend(b_data[r_pos : r_pos + u3])
+                        # В блоке данные канала занимают blk_cnt * 2048 либо u3 с выравниванием
+                        step_bytes = blk_cnt * 2048 if (r_pos + blk_cnt * 2048 <= len(b_data)) else u3
+                        r_pos += step_bytes
+                    else:
+                        byte_cnt = blk_cnt * 2048
+                        chan_raw_Streams[c_idx].extend(b_data[r_pos : r_pos + byte_cnt])
+                        r_pos += byte_cnt
 
             for c_idx, (cid, samples, headroom, sr, codec, u1, u2) in enumerate(channels_meta):
                 raw_chan = bytes(chan_raw_Streams[c_idx])
                 if codec == CODEC_ADPCM:
                     pcm = decode_adpcm(raw_chan, samples)
+                    wav_name = f"0x{cid:08X}.wav"
+                    write_wav_mono16(out_dir / wav_name, pcm, sr)
+                    manifest["exported_wavs"][f"0x{cid:08X}"] = wav_name
                 elif codec == CODEC_PCM:
                     pcm = raw_chan[: samples * 2]
+                    wav_name = f"0x{cid:08X}.wav"
+                    write_wav_mono16(out_dir / wav_name, pcm, sr)
+                    manifest["exported_wavs"][f"0x{cid:08X}"] = wav_name
+                elif codec == CODEC_MPEG:
+                    mp3_name = f"0x{cid:08X}.mp3"
+                    (out_dir / mp3_name).write_bytes(raw_chan)
+                    manifest["exported_wavs"][f"0x{cid:08X}"] = mp3_name
                 else:
                     raise ValueError(f"Неподдерживаемый кодек {codec} в канале 0x{cid:08X}")
-
-                wav_name = f"0x{cid:08X}.wav"
-                write_wav_mono16(out_dir / wav_name, pcm, sr)
-                manifest["exported_wavs"][f"0x{cid:08X}"] = wav_name
 
         with open(out_dir / "manifest.json", "w", encoding="utf-8") as f:
             json.dump(manifest, f, ensure_ascii=False, indent=2)
