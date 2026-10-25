@@ -247,6 +247,44 @@ def write_wav_mono16(path: Path, pcm_data: bytes, sample_rate: int) -> None:
         wf.writeframes(pcm_data)
 
 
+def _mp3_frame_len(buf: bytes, pos: int) -> int:
+    if pos + 4 > len(buf):
+        return 0
+    if buf[pos] != 0xFF or (buf[pos + 1] & 0xE0) != 0xE0:
+        return 0
+    b1, b2 = buf[pos + 1], buf[pos + 2]
+    ver = (b1 >> 3) & 0x3
+    layer = (b1 >> 1) & 0x3
+    if ver == 1 or layer != 1:
+        return 0
+    br_tab = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0]
+    sr_tab = [44100, 48000, 32000, 0]
+    br_idx = (b2 >> 4) & 0xF
+    sr_idx = (b2 >> 2) & 0x3
+    pad = (b2 >> 1) & 0x1
+    br = br_tab[br_idx] * 1000
+    sr = sr_tab[sr_idx]
+    if br == 0 or sr == 0:
+        return 0
+    div = 144 if ver == 3 else 72
+    return (div * br) // sr + pad
+
+
+def _find_mp3_sync(buf: bytes, start_pos: int) -> int:
+    limit = len(buf) - 8
+    for pos in range(max(0, start_pos), limit):
+        if buf[pos] == 0xFF and (buf[pos + 1] & 0xE0) == 0xE0:
+            fl1 = _mp3_frame_len(buf, pos)
+            if fl1 > 0:
+                if pos + fl1 + 4 <= len(buf):
+                    fl2 = _mp3_frame_len(buf, pos + fl1)
+                    if fl2 > 0:
+                        return pos
+                else:
+                    return pos
+    return start_pos
+
+
 def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
     """
     Prepend a valid 1-frame MPEG1 Layer3 Xing VBR header if not already present.
@@ -256,6 +294,11 @@ def ensure_mp3_xing_header(raw_mp3: bytes) -> bytes:
     first frame and truncates ~50% of the phrase ('Хватит болтать' instead of
     'Хватит болтать, чёрт побери'). Adding a Xing frame fixes libsndfile & media players.
     """
+    if len(raw_mp3) < 4:
+        return b""
+    sync0 = _find_mp3_sync(raw_mp3, 0)
+    if sync0 > 0 and sync0 < len(raw_mp3):
+        raw_mp3 = raw_mp3[sync0:]
     if len(raw_mp3) < 4 or raw_mp3[0] != 0xFF or (raw_mp3[1] & 0xE0) != 0xE0:
         return raw_mp3
     if b"Xing" in raw_mp3[:512] or b"Info" in raw_mp3[:512]:
@@ -590,12 +633,26 @@ class AwcContainer:
                     "<IIhHBBH", sf.data, 12 + i * 16
                 )
                 channels_meta.append((cid, samples, headroom, sr, codec, u1, u2))
+            manifest["channels_order"] = [f"0x{c[0]:08X}" for c in channels_meta]
+
+            all_mpeg = all(c[4] == CODEC_MPEG for c in channels_meta)
+            single_unpadded_mpeg_block = False
+            if all_mpeg and len(dat.data) >= chan_count * 24:
+                b0_u3_sum = sum(
+                    max(0, struct.unpack_from("<iiiiii", dat.data, i * 24)[5])
+                    for i in range(chan_count)
+                )
+                if block_count == 1 or (2048 + b0_u3_sum > block_size and 2048 + b0_u3_sum <= len(dat.data)):
+                    single_unpadded_mpeg_block = True
 
             chan_raw_Streams: List[bytearray] = [bytearray() for _ in range(chan_count)]
-            for b in range(block_count):
+            eff_blocks = 1 if single_unpadded_mpeg_block else block_count
+            for b in range(eff_blocks):
                 b_start = b * block_size
-                b_data = dat.data[b_start : b_start + block_size]
-                if not b_data:
+                if b_start >= len(dat.data):
+                    break
+                b_data = dat.data if single_unpadded_mpeg_block else dat.data[b_start : b_start + block_size]
+                if len(b_data) < chan_count * 24:
                     break
                 r_pos = 0
                 chan_headers = []
@@ -604,20 +661,21 @@ class AwcContainer:
                     r_pos += 24
                     chan_headers.append((start_blk, blk_cnt, u1, smp_cnt, u2, u3))
                 for c_idx in range(chan_count):
-                    blk_cnt = chan_headers[c_idx][1]
+                    blk_cnt = max(0, chan_headers[c_idx][1])
                     r_pos += blk_cnt * 4  # SampleOffsets
                 padc = (0x800 - (r_pos % 0x800)) % 0x800
                 r_pos += padc
                 for c_idx in range(chan_count):
                     start_blk, blk_cnt, u1, smp_cnt, u2, u3 = chan_headers[c_idx]
                     codec = channels_meta[c_idx][4]
-                    if codec == CODEC_MPEG and u3 > 0:
-                        chan_raw_Streams[c_idx].extend(b_data[r_pos : r_pos + u3])
-                        # В блоке данные канала занимают blk_cnt * 2048 либо u3 с выравниванием
-                        step_bytes = blk_cnt * 2048 if (r_pos + blk_cnt * 2048 <= len(b_data)) else u3
-                        r_pos += step_bytes
+                    if codec == CODEC_MPEG:
+                        if u3 > 0 and r_pos < len(b_data):
+                            sync_pos = _find_mp3_sync(b_data, r_pos)
+                            end_pos = min(len(b_data), sync_pos + u3)
+                            chan_raw_Streams[c_idx].extend(b_data[sync_pos:end_pos])
+                            r_pos = end_pos
                     else:
-                        byte_cnt = blk_cnt * 2048
+                        byte_cnt = max(0, blk_cnt) * 2048
                         chan_raw_Streams[c_idx].extend(b_data[r_pos : r_pos + byte_cnt])
                         r_pos += byte_cnt
 
@@ -635,8 +693,13 @@ class AwcContainer:
                     manifest["exported_wavs"][f"0x{cid:08X}"] = wav_name
                 elif codec == CODEC_MPEG:
                     mp3_name = f"0x{cid:08X}.mp3"
-                    (out_dir / mp3_name).write_bytes(ensure_mp3_xing_header(raw_chan))
-                    manifest["exported_wavs"][f"0x{cid:08X}"] = mp3_name
+                    mp3_path = out_dir / mp3_name
+                    xing_bytes = ensure_mp3_xing_header(raw_chan)
+                    if len(xing_bytes) >= 32:
+                        mp3_path.write_bytes(xing_bytes)
+                        manifest["exported_wavs"][f"0x{cid:08X}"] = mp3_name
+                    elif mp3_path.exists():
+                        mp3_path.unlink()
                 else:
                     raise ValueError(f"Неподдерживаемый кодек {codec} в канале 0x{cid:08X}")
 
