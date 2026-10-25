@@ -1,25 +1,52 @@
-=== STEP 6 (HIGH-EXPRESSIVENESS BATCH): RTX 5070 Ti EMOTION VC TEST ===
-Timestamp: 2026-10-25 15:52:52
+=== STEP 6 (MACRO/MICRO INTONATION + DRAMATIC PROLOGUE SCENES) ===
+Timestamp: 2026-10-25 16:18:26
 
-=== 1. UNPACKING RUSSIAN AWC SAMPLES (WITH XING VBR HEADERS) ===
-Unpack [engph.awc]: Распаковано потоков: 5 -> D:\gta5-voice\samples\ru_engph_unpacked
-Unpack [pro_mcs_1_mastered_only.awc]: Распаковано потоков: 1 -> D:\gta5-voice\samples\ru_pro_mcs_1_mastered_only_unpacked
-Unpack [ah_1_mcs_1_mastered_only.awc]: Распаковано потоков: 1 -> D:\gta5-voice\samples\ru_ah_1_mcs_1_mastered_only_unpacked
+=== 1. EXTRACTING & UNPACKING DRAMATIC PROLOGUE CUTSCENES ===
+Extract EN [pro_mcs_2_mastered_only.awc]: EXTRACTED (decrypted): prologue.rpf\pro_mcs_2_mastered_only.awc (2097296 bytes) -> D:\gta5-voice\samples\english\pro_mcs_2_mastered_only.awc
+Unpack EN [pro_mcs_2_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\english\pro_mcs_2_mastered_only_unpacked
+Unpack RU [pro_mcs_2_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\ru_pro_mcs_2_mastered_only_unpacked
+Extract EN [pro_mcs_3_pt1_mastered_only.awc]: EXTRACTED (decrypted): prologue.rpf\pro_mcs_3_pt1_mastered_only.awc (2097296 bytes) -> D:\gta5-voice\samples\english\pro_mcs_3_pt1_mastered_only.awc
+Unpack EN [pro_mcs_3_pt1_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\english\pro_mcs_3_pt1_mastered_only_unpacked
+Unpack RU [pro_mcs_3_pt1_mastered_only.awc]: Распаковано потоков: 3 -> D:\gta5-voice\samples\ru_pro_mcs_3_pt1_mastered_only_unpacked
 
-=== 2. RUNNING GPU BATCH EMOTION VC ON 4 SAMPLES ===
+=== 2. RUNNING GPU BATCH EMOTION VC ===
 VC Batch Output:
-W1025 15:52:57.888000 27780 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+W1025 16:18:37.531000 23708 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
 [GTA5EmotionVC] Loading 44.1kHz F0-Conditioned Seed-VC models on cuda...
-Warning: Skipped loading some keys due to shape mismatch: {'estimator.conv2.bias', 'estimator.res_projection.bias', 'estimator.t_embedder2.mlp.2.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.conv1.weight', 'estimator.input_pos', 'estimator.res_projection.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.t_embedder2.mlp.2.weight', 'estimator.conv1.bias', 'estimator.conv2.weight'}
+Warning: Skipped loading some keys due to shape mismatch: {'estimator.conv1.bias', 'estimator.conv2.bias', 'estimator.conv2.weight', 'estimator.conv1.weight', 'estimator.t_embedder2.mlp.2.bias', 'estimator.t_embedder2.mlp.2.weight', 'estimator.t_embedder2.mlp.0.bias', 'estimator.res_projection.bias', 'estimator.t_embedder2.mlp.0.weight', 'estimator.input_pos', 'estimator.res_projection.weight'}
 cfm loaded
 length_regulator loaded
 Loading weights from nvidia/bigvgan_v2_44khz_128band_512x
 Removing weight norm...
 [GTA5EmotionVC] All models loaded and ready.
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x1227C3A3.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x1227C3A3.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\engph_0x1227C3A3.wav', 'duration_sec': 2.611, 'phrases_converted': 1, 'f0_summary': ['P1(0.23..2.18s): F0 129->149Hz, IQR 4.6->8.1st'], 'elapsed_sec': 19.78}
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x0769AE27.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x0769AE27.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\engph_0x0769AE27.wav', 'duration_sec': 2.755, 'phrases_converted': 1, 'f0_summary': ['P1(0.17..2.36s): F0 125->217Hz, IQR 12.4->16.4st'], 'elapsed_sec': 1.75}
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_pro_mcs_1_mastered_only_unpacked\\0x00E9E7B7.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\pro_mcs_1_mastered_only_unpacked\\0x00E9E7B7.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\pro_mcs_1_0x00E9E7B7.wav', 'duration_sec': 16.477, 'phrases_converted': 3, 'f0_summary': ['P1(9.10..9.92s): F0 115->146Hz, IQR 9.3->14.9st', 'P2(10.14..12.12s): F0 127->152Hz, IQR 5.2->8.1st', 'P3(12.64..14.00s): F0 85->102Hz, IQR 8.0->15.1st'], 'elapsed_sec': 5.59}
-DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_ah_1_mcs_1_mastered_only_unpacked\\0x182B26EC.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\ah_1_mcs_1_mastered_only_unpacked\\0x182B26EC.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\ah_1_mcs_1_0x182B26EC.wav', 'duration_sec': 34.669, 'phrases_converted': 17, 'f0_summary': ['P1(6.29..8.02s): F0 76->91Hz, IQR 13.7->12.9st', 'P2(9.42..10.24s): F0 164->155Hz, IQR 11.9->17.1st', 'P3(11.16..12.33s): F0 100->109Hz, IQR 4.4->7.8st', 'P4(13.03..13.80s): F0 110->128Hz, IQR 2.5->4.9st', 'P5(14.13..16.13s): F0 109->122Hz, IQR 8.3->12.1st', 'P6(16.21..17.62s): F0 112->112Hz, IQR 7.5->11.0st', 'P7(18.08..18.65s): F0 112->110Hz, IQR 13.1->13.5st', 'P8(19.09..19.70s): F0 86->116Hz, IQR 8.0->8.1st', 'P9(20.05..20.82s): F0 121->145Hz, IQR 14.5->14.5st', 'P10(21.08..22.69s): F0 118->134Hz, IQR 8.0->14.6st', 'P11(22.77..23.61s): F0 132->134Hz, IQR 8.0->9.4st', 'P12(24.17..24.68s): F0 99->112Hz, IQR 6.4->9.5st', 'P13(24.87..25.68s): F0 109->135Hz, IQR 8.2->10.4st', 'P14(25.78..27.33s): F0 102->122Hz, IQR 4.7->6.7st', 'P15(27.66..29.09s): F0 90->109Hz, IQR 3.3->4.2st', 'P16(29.52..31.54s): F0 105->113Hz, IQR 5.8->7.3st', 'P17(32.50..33.15s): F0 128->133Hz, IQR 8.4->11.2st'], 'elapsed_sec': 31.56}
+DONE: {'ru_path': 'D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x1227C3A3.mp3', 'en_path': 'D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x1227C3A3.wav', 'out_path': 'D:\\gta5-voice\\samples\\enhanced_ru\\engph_0x1227C3A3.wav', 'duration_sec': 2.611, 'phrases_converted': 1, 'f0_summary': ['P1(0.23..2.18s): F0 129->165Hz, IQR 4.6->8.2st'], 'elapsed_sec': 8.81}
+Traceback (most recent call last):
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 671, in <module>
+    main()
+    ~~~~^^
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 649, in main
+    info = engine.process_file(
+        ru_path=item["ru"],
+    ...<4 lines>...
+        contour_blend=args.contour_blend,
+    )
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 533, in process_file
+    ru_audio, ru_sr = read_audio_complete(ru_path)
+                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\gta5-voice\tools\gta5_emotion_vc.py", line 100, in read_audio_complete
+    audio, sr = sf.read(io.BytesIO(raw), dtype="float32")
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\gta5-voice\.venv\Lib\site-packages\soundfile.py", line 313, in read
+    with SoundFile(file, 'r', samplerate, channels,
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                   subtype, endian, format, closefd) as f:
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\gta5-voice\.venv\Lib\site-packages\soundfile.py", line 708, in __init__
+    self._file = self._open(file, mode_int, closefd)
+                 ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\gta5-voice\.venv\Lib\site-packages\soundfile.py", line 1296, in _open
+    raise LibsndfileError(err, prefix=f"Error opening {self.name!r}: ")
+soundfile.LibsndfileError: Error opening <_io.BytesIO object at 0x0000026732467330>: Format not recognised.
 
 === END OF STEP 6 REPORT ===
