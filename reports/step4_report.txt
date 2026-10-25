@@ -1,0 +1,28 @@
+﻿=== STEP 4: RSXXTEA DECRYPTION + FULL RPF NG REPACK ROUND-TRIP ===
+Timestamp: 2026-10-25 12:48:40
+
+Build output: ; ╨б╨▒╨╛╤А╨║╨░ ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░.;     ╨Я╤А╨╡╨┤╤Г╨┐╤А╨╡╨╢╨┤╨╡╨╜╨╕╨╣: 0;     ╨Ю╤И╨╕╨▒╨╛╨║: 0; ; ╨Я╤А╨╛╤И╨╗╨╛ ╨▓╤А╨╡╨╝╨╡╨╜╨╕ 00:00:02.07
+=== 1. EXTRACTING & DECRYPTING ENGLISH AWC -> WAV ===
+EXTRACTED (decrypted): prologue.rpf\pro_mcs_1_mastered_only.awc (524368 bytes) -> D:\gta5-voice\samples\english\pro_mcs_1_mastered_only.awc
+Unpacked WAVs for pro_mcs_1_mastered_only.awc: ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\english\pro_mcs_1_mastered_only_unpacked
+EXTRACTED (decrypted): cutscene_mastered_only.rpf\ah_1_mcs_1_mastered_only.awc (1048672 bytes) -> D:\gta5-voice\samples\english\ah_1_mcs_1_mastered_only.awc
+Unpacked WAVs for ah_1_mcs_1_mastered_only.awc: ╨рёяръютрэю яюЄюъют: 1 -> D:\gta5-voice\samples\english\ah_1_mcs_1_mastered_only_unpacked
+EXTRACTED (decrypted): ss_de.rpf\engph.awc (192722 bytes) -> D:\gta5-voice\samples\english\engph.awc
+Unpacked WAVs for engph.awc: ╨рёяръютрэю яюЄюъют: 5 -> D:\gta5-voice\samples\english\engph_unpacked
+
+=== 2. TESTING FULL ROUND-TRIP: WAV -> AWC -> PROLOGUE.RPF (NATIVE NG ENCRYPTION) ===
+AWC Repack result: ╙яръютрэ эют√щ AWC (524368 срщЄ) -> D:\gta5-voice\samples\repacked_pro_mcs_1_mastered_only.awc
+RPF Inject result: RPF Error: D:\gta5-voice\samples\test_PROLOGUE.rpf: System.Exception: Error in RPF7 file entry.
+   at CodeWalker.GameFiles.RpfBinaryFileEntry.Read(DataReader reader)
+   at CodeWalker.GameFiles.RpfFile.ReadHeader(BinaryReader br)
+   at CodeWalker.GameFiles.RpfFile.ScanStructure(BinaryReader br, Action`1 updateStatus, Action`1 errorLog)
+   at CodeWalker.GameFiles.RpfFile.ScanStructure(Action`1 updateStatus, Action`1 errorLog)
+RPF Verify Extract result: RPF Error: D:\gta5-voice\samples\test_PROLOGUE.rpf: System.Exception: Error in RPF7 file entry.
+   at CodeWalker.GameFiles.RpfBinaryFileEntry.Read(DataReader reader)
+   at CodeWalker.GameFiles.RpfFile.ReadHeader(BinaryReader br)
+   at CodeWalker.GameFiles.RpfFile.ScanStructure(BinaryReader br, Action`1 updateStatus, Action`1 errorLog)
+   at CodeWalker.GameFiles.RpfFile.ScanStructure(Action`1 updateStatus, Action`1 errorLog)
+Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
+   at Program.Main(String[] args) in D:\gta5-voice\tools\RpfTool\Program.cs:line 206
+
+=== END OF STEP 4 REPORT ===
