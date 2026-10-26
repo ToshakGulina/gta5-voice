@@ -692,7 +692,18 @@ def process_cutscene(
         ru_text = engine.transcribe(ru_slice, target_sr, language="russian")
         # Skip pure noise/gunshots where Whisper outputs nothing or hallucinations
         ru_clean = re.sub(r"[^а-яА-ЯёЁ0-9]", "", ru_text)
-        if len(ru_clean) < 2:
+        ru_low = ru_text.lower()
+        hallucinations = (
+            "субтитр",
+            "новиков",
+            "редактор",
+            "корректор",
+            "стук в дверь",
+            "продолжение следует",
+            "dimatorzok",
+            "amara.org",
+        )
+        if len(ru_clean) < 2 or any(h in ru_low for h in hallucinations):
             continue
 
         en_prompt = find_best_english_prompt(en_wav, target_sr, s_sec, e_sec)
