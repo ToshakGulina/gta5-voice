@@ -1,9 +1,9 @@
 ==================================================================
 GTA 5 Voice - Step 7: F5-TTS_RUSSIAN (Zero-Shot) + Yandex Lively Voices
-Date: 2026-10-26 12:28:35
+Date: 2026-10-26 12:33:44
 ==================================================================
 [Download] f5_tts_core.zip (28768 bytes)
-[Download] gta5_f5_tts.py (31050 bytes)
+[Download] gta5_f5_tts.py (32842 bytes)
 [Download] gta5_awc_tool.py (51059 bytes)
 [Download] yandex_lively_0x1227C3A3.wav (160862 bytes)
 [Download] yandex_lively_0x0769AE27.wav (163244 bytes)
@@ -12,32 +12,62 @@ Date: 2026-10-26 12:28:35
 --- Running Misha24-10/F5-TTS_RUSSIAN (F5TTS_v1_Base_v2) on RTX 5070 Ti ---
   [F5-TTS] Initializing on device: cuda
   [F5-TTS] Fetching Misha24-10/F5-TTS_RUSSIAN (F5TTS_v1_Base_v2)...
+  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   [F5-TTS] Loaded vocab (2545 tokens). Building DiT + CFM...
   [F5-TTS] Checkpoint loaded (missing=0, unexpected=0).
   [F5-TTS] Loading charactr/vocos-mel-24khz vocoder...
-  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
   [F5-TTS] Loading openai/whisper-small ASR...
-  W1026 12:29:27.116000 18564 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+  W1026 12:33:53.603000 28076 Lib\site-packages\torch\distributed\elastic\multiprocessing\redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
   [F5-TTS] Engine ready!
   
   === [F5-TTS] Job: 0x1227C3A3 (single) ===
-  Traceback (most recent call last):
-    File "D:\gta5-voice\tools\gta5_f5_tts.py", line 835, in <module>
-      main()
-      ~~~~^^
-    File "D:\gta5-voice\tools\gta5_f5_tts.py", line 810, in main
-      r = process_single(
-          eng,
-      ...<4 lines>...
-          job.get("ru_text"),
-      )
-    File "D:\gta5-voice\tools\gta5_f5_tts.py", line 580, in process_single
-      ru_wav, ru_sr = load_audio_mono(ru_audio_path)
-                      ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
-    File "D:\gta5-voice\tools\gta5_f5_tts.py", line 128, in load_audio_mono
-      with open(path, "rb") as f:
-           ~~~~^^^^^^^^^^^^
-  FileNotFoundError: [Errno 2] No such file or directory: 'D:\\gta5-voice\\samples\\nerual\\engph_unpacked\\0x1227C3A3.mp3'
-[F5-TTS] ExitCode=1, Elapsed=74.8s
+  [transformers] Using custom `forced_decoder_ids` from the (generation) config. This is deprecated in favor of the `task` and `language` flags/config options.
+  [transformers] Passing `generation_config` together with generation-related arguments=({'begin_suppress_tokens', 'suppress_tokens'}) is deprecated and will be removed in future versions. Please pass either a `generation_config` object OR all generation parameters explicitly, but not both.
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer WhisperTokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  
+  === [F5-TTS] Job: 0x0769AE27 (single) ===
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  
+  === [F5-TTS] Job: pro_mcs_1 (cutscene) ===
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 01  8.78s..12.20s] EN='Here's Roger, bro! Come on, Nester, we're giving you everything you want!' -> RU='���� �+� �����. ������, �+� � �+�� ��+� ����+��.'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 02 12.32s..14.10s] EN='I don't even think about it' -> RU='���� �+� ����� +�� ����.'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 03 14.24s..15.90s] EN='AHH!' -> RU='�������� ��������� �.��������.'
+  
+  === [F5-TTS] Job: pro_mcs_2 (cutscene) ===
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 01 17.36s..19.14s] EN='Ha ha ha' -> RU='�+� +��!'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 02 19.30s..21.44s] EN='There's enough here for us all to enjoy.' -> RU='�+� �+�� ����� ������ �+� ��+��.'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 03 21.78s..23.56s] EN='Depends on how you look at it.' -> RU='��� �+�� ����������?'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 04 23.78s..24.60s] EN='depends on how you look at it.' -> RU='��+�� � ��+���.'
+  
+  === [F5-TTS] Job: pro_mcs_3_pt1 (cutscene) ===
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 01 16.84s..21.88s] EN='I saw your face I remember' -> RU='��������! +�� � ���� � �����! � ���+� ���� �������.'
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+  [transformers] Both `max_new_tokens` (=128) and `max_length`(=448) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+    [Segment 02 22.28s..26.04s] EN='You forget a thousand things every day. How about you make sure this is one of them?' -> RU='��������� ������ ����� � �+���. �+���� ��� ����� ���� +�� �+��.'
+  
+  === [Yandex Reel] Built D:\gta5-voice\samples\yandex_cutscenes_reel.wav (75.97s) ===
+[F5-TTS] ExitCode=0, Elapsed=38.4s
 
---- Repacking .awc & In-Place RPF Injection ---
+--- Repacking .awc and In-Place RPF Injection ---
+  �������� ����� AWC (524368 ����) -> D:\gta5-voice\samples\repacked_f5_pro_mcs_1_mastered_only.awc
+  �������� ����� AWC (2097296 ����) -> D:\gta5-voice\samples\repacked_f5_pro_mcs_2_mastered_only.awc
+  �������� ����� AWC (2097296 ����) -> D:\gta5-voice\samples\repacked_f5_pro_mcs_3_pt1_mastered_only.awc
