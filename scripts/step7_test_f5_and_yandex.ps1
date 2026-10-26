@@ -20,7 +20,7 @@ function Add-Line([string]$text) {
 }
 
 Add-Line "=================================================================="
-Add-Line "GTA 5 Voice — Step 7: F5-TTS_RUSSIAN (Zero-Shot) + Yandex Lively Voices"
+Add-Line "GTA 5 Voice - Step 7: F5-TTS_RUSSIAN (Zero-Shot) + Yandex Lively Voices"
 Add-Line "Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Add-Line "=================================================================="
 
