@@ -1,0 +1,128 @@
+[
+  {
+    "mode": "single",
+    "en_wav": "D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x1227C3A3.wav",
+    "ru_audio": "D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x1227C3A3.mp3",
+    "out_wav": "D:\\gta5-voice\\samples\\f5_0x1227C3A3.wav",
+    "target_sr": 32000,
+    "target_samples": 80408,
+    "duration_sec": 2.513,
+    "en_transcript": "Why are you always on the phone?",
+    "ru_transcript": "Почему т+ы всегда болтаешь п+о телефону?",
+    "name": "0x1227C3A3"
+  },
+  {
+    "mode": "single",
+    "en_wav": "D:\\gta5-voice\\samples\\english\\engph_unpacked\\0x0769AE27.wav",
+    "ru_audio": "D:\\gta5-voice\\samples\\ru_engph_unpacked\\0x0769AE27.mp3",
+    "out_wav": "D:\\gta5-voice\\samples\\f5_0x0769AE27.wav",
+    "target_sr": 32000,
+    "target_samples": 62720,
+    "duration_sec": 1.96,
+    "en_transcript": "Hang up for Christ's sake!",
+    "ru_transcript": "Хватит болта, ч+ерт п+о тебя попрал!",
+    "name": "0x0769AE27"
+  },
+  {
+    "mode": "cutscene",
+    "en_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_1_mastered_only_unpacked",
+    "ru_audio": "D:\\gta5-voice\\samples\\ru_pro_mcs_1_mastered_only_unpacked",
+    "out_wav": "D:\\gta5-voice\\samples\\f5_pro_mcs_1.wav",
+    "target_sr": 48000,
+    "target_samples": 787200,
+    "duration_sec": 16.4,
+    "segments_synthesized": 3,
+    "segments": [
+      {
+        "index": 1,
+        "start_sec": 8.78,
+        "end_sec": 12.2,
+        "en_transcript": "Here's Roger, bro! Come on, Nester, we're giving you everything you want!",
+        "ru_transcript": "Руки з+а спину. Мистер, м+ы и т+ак вс+е отда+ем."
+      },
+      {
+        "index": 2,
+        "start_sec": 12.32,
+        "end_sec": 14.1,
+        "en_transcript": "I don't even think about it",
+        "ru_transcript": "Даже н+е думай +об этом."
+      },
+      {
+        "index": 3,
+        "start_sec": 14.24,
+        "end_sec": 15.9,
+        "en_transcript": "AHH!",
+        "ru_transcript": "Субтитры субтитров Н.Новикова."
+      }
+    ],
+    "name": "pro_mcs_1"
+  },
+  {
+    "mode": "cutscene",
+    "en_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_2_mastered_only_unpacked",
+    "ru_audio": "D:\\gta5-voice\\samples\\ru_pro_mcs_2_mastered_only_unpacked",
+    "out_wav": "D:\\gta5-voice\\samples\\f5_pro_mcs_2.wav",
+    "target_sr": 48000,
+    "target_samples": 1254400,
+    "duration_sec": 26.133,
+    "segments_synthesized": 4,
+    "segments": [
+      {
+        "index": 1,
+        "start_sec": 17.36,
+        "end_sec": 19.14,
+        "en_transcript": "Ha ha ha",
+        "ru_transcript": "Н+у +ах!"
+      },
+      {
+        "index": 2,
+        "start_sec": 19.3,
+        "end_sec": 21.44,
+        "en_transcript": "There's enough here for us all to enjoy.",
+        "ru_transcript": "Д+а т+ут точно хватит н+а вс+ех."
+      },
+      {
+        "index": 3,
+        "start_sec": 21.78,
+        "end_sec": 23.56,
+        "en_transcript": "Depends on how you look at it.",
+        "ru_transcript": "Это к+ак посмотреть?"
+      },
+      {
+        "index": 4,
+        "start_sec": 23.78,
+        "end_sec": 24.6,
+        "en_transcript": "depends on how you look at it.",
+        "ru_transcript": "СТ+УК В ДВ+ЕРЬ."
+      }
+    ],
+    "name": "pro_mcs_2"
+  },
+  {
+    "mode": "cutscene",
+    "en_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_3_pt1_mastered_only_unpacked",
+    "ru_audio": "D:\\gta5-voice\\samples\\ru_pro_mcs_3_pt1_mastered_only_unpacked",
+    "out_wav": "D:\\gta5-voice\\samples\\f5_pro_mcs_3_pt1.wav",
+    "target_sr": 48000,
+    "target_samples": 1278400,
+    "duration_sec": 26.633,
+    "segments_synthesized": 2,
+    "segments": [
+      {
+        "index": 1,
+        "start_sec": 16.84,
+        "end_sec": 21.88,
+        "en_transcript": "I saw your face I remember",
+        "ru_transcript": "Сдавайся! +Он у меня в руках! Я тво+е лицо запомню."
+      },
+      {
+        "index": 2,
+        "start_sec": 22.28,
+        "end_sec": 26.04,
+        "en_transcript": "You forget a thousand things every day. How about you make sure this is one of them?",
+        "ru_transcript": "Забываешь тысячи вещей в д+ень. П+усть это будет одна +из н+их."
+      }
+    ],
+    "name": "pro_mcs_3_pt1"
+  }
+]
