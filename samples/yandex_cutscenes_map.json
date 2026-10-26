@@ -1,0 +1,32 @@
+{
+  "reel_sr": 24000,
+  "items": [
+    {
+      "name": "pro_mcs_1",
+      "orig_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_1_mastered_only_unpacked\\0x00E9E7B7.wav",
+      "orig_sr": 48000,
+      "orig_samples": 787200,
+      "orig_duration_sec": 16.4,
+      "reel_start_sec": 0.8,
+      "reel_end_sec": 17.2
+    },
+    {
+      "name": "pro_mcs_2",
+      "orig_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_2_mastered_only_unpacked\\0x14CFDA15.wav",
+      "orig_sr": 48000,
+      "orig_samples": 1254400,
+      "orig_duration_sec": 26.1333,
+      "reel_start_sec": 19.2,
+      "reel_end_sec": 45.3333
+    },
+    {
+      "name": "pro_mcs_3_pt1",
+      "orig_wav": "D:\\gta5-voice\\samples\\english\\pro_mcs_3_pt1_mastered_only_unpacked\\0x0963A618.wav",
+      "orig_sr": 48000,
+      "orig_samples": 1278400,
+      "orig_duration_sec": 26.6333,
+      "reel_start_sec": 47.3333,
+      "reel_end_sec": 73.9667
+    }
+  ]
+}
