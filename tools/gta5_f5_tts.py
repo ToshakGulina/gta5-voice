@@ -122,8 +122,49 @@ def count_mp3_frames(mp3_bytes: bytes) -> int:
     return frames
 
 
+def resolve_audio_path(path_or_dir: str) -> str:
+    """If `path_or_dir` is a directory (or its parent dir exists when stream ID differs), pick highest-RMS stream."""
+    if os.path.isfile(path_or_dir) and os.path.getsize(path_or_dir) >= 64:
+        return path_or_dir
+    search_dir = path_or_dir if os.path.isdir(path_or_dir) else os.path.dirname(path_or_dir)
+    if not os.path.isdir(search_dir):
+        raise FileNotFoundError(f"Audio path or directory not found: {path_or_dir}")
+    candidates = []
+    for fn in sorted(os.listdir(search_dir)):
+        if fn.lower().endswith((".wav", ".mp3")) and not fn.startswith(("enhanced_", "f5_")):
+            full = os.path.join(search_dir, fn)
+            if os.path.isfile(full) and os.path.getsize(full) >= 64:
+                candidates.append(full)
+    if not candidates:
+        raise FileNotFoundError(f"No valid .wav/.mp3 streams in {search_dir}")
+    if len(candidates) == 1:
+        return candidates[0]
+    best_p = candidates[0]
+    best_rms = -1.0
+    for c in candidates:
+        try:
+            if c.lower().endswith(".mp3"):
+                with open(c, "rb") as f:
+                    raw = f.read()
+                if b"Xing" not in raw[:512] and b"Info" not in raw[:512]:
+                    nf = count_mp3_frames(raw)
+                    if nf > 0:
+                        raw = make_xing_header_mp3(raw, nf)
+                w, _ = sf.read(io.BytesIO(raw), dtype="float32")
+            else:
+                w, _ = sf.read(c, dtype="float32")
+            rms = float(np.sqrt(np.mean(w**2)))
+            if rms > best_rms:
+                best_rms = rms
+                best_p = c
+        except Exception:
+            pass
+    return best_p
+
+
 def load_audio_mono(path: str):
-    """Load WAV or VBR MP3 cleanly into mono float32 numpy array + sample_rate."""
+    """Load WAV or VBR MP3 (or unpacked directory) cleanly into mono float32 numpy array + sample_rate."""
+    path = resolve_audio_path(path)
     if path.lower().endswith(".mp3"):
         with open(path, "rb") as f:
             raw = f.read()
@@ -731,7 +772,7 @@ def build_yandex_reel(items, out_wav_path: str, out_map_path: str, reel_sr: int 
 
     for item in items:
         name = item["name"]
-        wav_path = item["wav_path"]
+        wav_path = resolve_audio_path(item["wav_path"])
         wav, sr = load_audio_mono(wav_path)
         orig_dur = len(wav) / float(sr)
         wav_r = resample_audio(wav, sr, reel_sr)

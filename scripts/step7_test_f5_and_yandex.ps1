@@ -1,16 +1,23 @@
+param(
+    [string]$NerualDir = "D:\Users\anton\Downloads\NeuroDub_GTAV_FREE_dub",
+    [string]$GameDir   = "D:\Games\Grand Theft Auto V.Premium Edition.EGS-Rip\GTAV"
+)
+
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $WorkRoot  = "D:\gta5-voice"
 $ToolsDir  = Join-Path $WorkRoot "tools"
 $SampleDir = Join-Path $WorkRoot "samples"
+$EngDir    = Join-Path $SampleDir "english"
 $ReportDir = Join-Path $WorkRoot "reports"
 $CkptDir   = Join-Path $WorkRoot "checkpoints"
 $VenvPy    = Join-Path $WorkRoot ".venv\Scripts\python.exe"
 $TokenFile = Join-Path $WorkRoot ".token"
 $RpfTool   = Join-Path $ToolsDir "RpfTool\bin\Release\net8.0\RpfTool.exe"
+$StoryRoot = Join-Path $NerualDir "NeuroDub_GTAV_FREE_dub_story"
 
-New-Item -ItemType Directory -Force -Path $ToolsDir, $SampleDir, $ReportDir, $CkptDir | Out-Null
+New-Item -ItemType Directory -Force -Path $ToolsDir, $SampleDir, $EngDir, $ReportDir, $CkptDir | Out-Null
 
 $ReportFile = Join-Path $ReportDir "step7_report.txt"
 $Lines = New-Object System.Collections.Generic.List[string]
@@ -36,28 +43,54 @@ $Downloads = @(
 )
 
 foreach ($d in $Downloads) {
-    Invoke-WebRequest -Uri $d.Url -OutFile $d.Out -UseBasicParsing
+    Invoke-WebRequest -Uri ($d.Url + "?t=" + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -OutFile $d.Out -UseBasicParsing
     $sz = (Get-Item $d.Out).Length
     Add-Line "[Download] $(Split-Path $d.Out -Leaf) ($sz bytes)"
 }
 
+$AwcTool = Join-Path $ToolsDir "gta5_awc_tool.py"
+
+# 1b. Ensure English and Russian AWC containers are unpacked
+$EnSingleDir = Join-Path $EngDir "engph_unpacked"
+$RuSingleDir = Join-Path $SampleDir "ru_engph_unpacked"
+if (-not (Test-Path $RuSingleDir)) {
+    $RuEngphAwc = Join-Path $StoryRoot "update\x64\dlcpacks\patchdayng\dlc.rpf\x64\audio\sfx\ss_de.rpf\engph.awc"
+    if (Test-Path $RuEngphAwc) {
+        & $VenvPy $AwcTool unpack $RuEngphAwc $RuSingleDir 2>&1 | Out-Null
+    }
+}
+
+$PrologueRpf = Join-Path $GameDir "x64\audio\sfx\PROLOGUE.rpf"
+foreach ($awcName in @("pro_mcs_1_mastered_only.awc", "pro_mcs_2_mastered_only.awc", "pro_mcs_3_pt1_mastered_only.awc")) {
+    $enAwc = Join-Path $EngDir $awcName
+    $enUnp = Join-Path $EngDir ($awcName.Replace(".awc", "_unpacked"))
+    if (-not (Test-Path $enAwc)) {
+        & $RpfTool extract $GameDir $PrologueRpf $awcName $enAwc 2>&1 | Out-Null
+    }
+    if (-not (Test-Path $enUnp)) {
+        & $VenvPy $AwcTool unpack $enAwc $enUnp 2>&1 | Out-Null
+    }
+    $ruAwc = Join-Path $StoryRoot ("x64\audio\sfx\PROLOGUE.rpf\" + $awcName)
+    $ruUnp = Join-Path $SampleDir ("ru_" + $awcName.Replace(".awc", "_unpacked"))
+    if (-not (Test-Path $ruUnp)) {
+        & $VenvPy $AwcTool unpack $ruAwc $ruUnp 2>&1 | Out-Null
+    }
+}
+
 # 2. Build batch manifest for F5-TTS_RUSSIAN + Yandex Cutscenes Reel
-$EnSingleDir = Join-Path $SampleDir "english\engph_unpacked"
-$RuSingleDir = Join-Path $SampleDir "nerual\engph_unpacked"
+$EnMcs1Dir = Join-Path $EngDir "pro_mcs_1_mastered_only_unpacked"
+$RuMcs1Dir = Join-Path $SampleDir "ru_pro_mcs_1_mastered_only_unpacked"
 
-$EnMcs1 = Join-Path $SampleDir "english\pro_mcs_1_mastered_only_unpacked\0x049B266C.wav"
-$RuMcs1 = Join-Path $SampleDir "nerual\pro_mcs_1_mastered_only_unpacked\0x049B266C.mp3"
+$EnMcs2Dir = Join-Path $EngDir "pro_mcs_2_mastered_only_unpacked"
+$RuMcs2Dir = Join-Path $SampleDir "ru_pro_mcs_2_mastered_only_unpacked"
 
-$EnMcs2 = Join-Path $SampleDir "english\pro_mcs_2_mastered_only_unpacked\0x110566DA.wav"
-$RuMcs2 = Join-Path $SampleDir "nerual\pro_mcs_2_mastered_only_unpacked\0x110566DA.mp3"
+$EnMcs3Dir = Join-Path $EngDir "pro_mcs_3_pt1_mastered_only_unpacked"
+$RuMcs3Dir = Join-Path $SampleDir "ru_pro_mcs_3_pt1_mastered_only_unpacked"
 
-$EnMcs3 = Join-Path $SampleDir "english\pro_mcs_3_pt1_mastered_only_unpacked\0x00E9E7B7.wav"
-$RuMcs3 = Join-Path $SampleDir "nerual\pro_mcs_3_pt1_mastered_only_unpacked\0x00E9E7B7.mp3"
-
-$BatchJsonPath = Join-Path $SampleDir "f5_batch_manifest.json"
+$BatchJsonPath   = Join-Path $SampleDir "f5_batch_manifest.json"
 $BatchReportJson = Join-Path $ReportDir "f5_batch_results.json"
-$YandexReelWav = Join-Path $SampleDir "yandex_cutscenes_reel.wav"
-$YandexReelMap = Join-Path $SampleDir "yandex_cutscenes_map.json"
+$YandexReelWav   = Join-Path $SampleDir "yandex_cutscenes_reel.wav"
+$YandexReelMap   = Join-Path $SampleDir "yandex_cutscenes_map.json"
 
 $BatchObj = @{
     cache_dir  = $CkptDir
@@ -80,22 +113,22 @@ $BatchObj = @{
         @{
             name     = "pro_mcs_1"
             type     = "cutscene"
-            en_wav   = $EnMcs1
-            ru_audio = $RuMcs1
+            en_wav   = $EnMcs1Dir
+            ru_audio = $RuMcs1Dir
             out_wav  = (Join-Path $SampleDir "f5_pro_mcs_1.wav")
         },
         @{
             name     = "pro_mcs_2"
             type     = "cutscene"
-            en_wav   = $EnMcs2
-            ru_audio = $RuMcs2
+            en_wav   = $EnMcs2Dir
+            ru_audio = $RuMcs2Dir
             out_wav  = (Join-Path $SampleDir "f5_pro_mcs_2.wav")
         },
         @{
             name     = "pro_mcs_3_pt1"
             type     = "cutscene"
-            en_wav   = $EnMcs3
-            ru_audio = $RuMcs3
+            en_wav   = $EnMcs3Dir
+            ru_audio = $RuMcs3Dir
             out_wav  = (Join-Path $SampleDir "f5_pro_mcs_3_pt1.wav")
         }
     )
@@ -103,9 +136,9 @@ $BatchObj = @{
         out_wav = $YandexReelWav
         out_map = $YandexReelMap
         items   = @(
-            @{ name = "pro_mcs_1";     wav_path = $EnMcs1 },
-            @{ name = "pro_mcs_2";     wav_path = $EnMcs2 },
-            @{ name = "pro_mcs_3_pt1"; wav_path = $EnMcs3 }
+            @{ name = "pro_mcs_1";     wav_path = $EnMcs1Dir },
+            @{ name = "pro_mcs_2";     wav_path = $EnMcs2Dir },
+            @{ name = "pro_mcs_3_pt1"; wav_path = $EnMcs3Dir }
         )
     }
 }
@@ -131,45 +164,42 @@ foreach ($line in $F5Out) {
 Add-Line "[F5-TTS] ExitCode=$F5Exit, Elapsed=${F5Elapsed}s"
 
 # 4. Repack Prologue cutscenes with F5-TTS audio and inject into rpf_test\PROLOGUE.rpf
-$AwcTool = Join-Path $ToolsDir "gta5_awc_tool.py"
 $TestRpf = Join-Path $SampleDir "rpf_test\PROLOGUE.rpf"
 
 $CutsceneRepacks = @(
     @{
         Name    = "pro_mcs_1_mastered_only.awc"
-        OrigAwc = (Join-Path $SampleDir "english\pro_mcs_1_mastered_only.awc")
-        UnpDir  = (Join-Path $SampleDir "english\pro_mcs_1_mastered_only_unpacked")
+        OrigAwc = (Join-Path $EngDir "pro_mcs_1_mastered_only.awc")
+        UnpDir  = $EnMcs1Dir
         F5Wav   = (Join-Path $SampleDir "f5_pro_mcs_1.wav")
-        Targets = @("0x049B266C.wav", "0x026FE200.wav")
         OutAwc  = (Join-Path $SampleDir "repacked_f5_pro_mcs_1_mastered_only.awc")
     },
     @{
         Name    = "pro_mcs_2_mastered_only.awc"
-        OrigAwc = (Join-Path $SampleDir "english\pro_mcs_2_mastered_only.awc")
-        UnpDir  = (Join-Path $SampleDir "english\pro_mcs_2_mastered_only_unpacked")
+        OrigAwc = (Join-Path $EngDir "pro_mcs_2_mastered_only.awc")
+        UnpDir  = $EnMcs2Dir
         F5Wav   = (Join-Path $SampleDir "f5_pro_mcs_2.wav")
-        Targets = @("0x110566DA.wav")
         OutAwc  = (Join-Path $SampleDir "repacked_f5_pro_mcs_2_mastered_only.awc")
     },
     @{
         Name    = "pro_mcs_3_pt1_mastered_only.awc"
-        OrigAwc = (Join-Path $SampleDir "english\pro_mcs_3_pt1_mastered_only.awc")
-        UnpDir  = (Join-Path $SampleDir "english\pro_mcs_3_pt1_mastered_only_unpacked")
+        OrigAwc = (Join-Path $EngDir "pro_mcs_3_pt1_mastered_only.awc")
+        UnpDir  = $EnMcs3Dir
         F5Wav   = (Join-Path $SampleDir "f5_pro_mcs_3_pt1.wav")
-        Targets = @("0x00E9E7B7.wav")
         OutAwc  = (Join-Path $SampleDir "repacked_f5_pro_mcs_3_pt1_mastered_only.awc")
     }
 )
 
 Add-Line ""
-Add-Line "--- Repacking .awc & In-Place RPF Injection ---"
+Add-Line "--- Repacking .awc and In-Place RPF Injection ---"
 foreach ($c in $CutsceneRepacks) {
     if (Test-Path $c.F5Wav) {
         $RepDir = Join-Path $SampleDir ("f5_repack_" + [System.IO.Path]::GetFileNameWithoutExtension($c.Name))
         New-Item -ItemType Directory -Force -Path $RepDir | Out-Null
         Copy-Item -Path (Join-Path $c.UnpDir "*") -Destination $RepDir -Force
-        foreach ($t in $c.Targets) {
-            Copy-Item -Path $c.F5Wav -Destination (Join-Path $RepDir $t) -Force
+        $WavTargets = Get-ChildItem -Path $RepDir -Filter "*.wav" | Where-Object { $_.Length -ge 64 }
+        foreach ($wt in $WavTargets) {
+            Copy-Item -Path $c.F5Wav -Destination $wt.FullName -Force
         }
         $RepOut = & $VenvPy $AwcTool repack $c.OrigAwc $RepDir $c.OutAwc 2>&1
         foreach ($l in $RepOut) { Add-Line "  $l" }
